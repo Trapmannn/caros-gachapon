@@ -257,6 +257,48 @@
                 letter-spacing: 1px;
             }
         }
+
+        /* Landscape orientation blocker */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            .landscape-blocker {
+                display: flex !important;
+            }
+        }
+
+        .landscape-blocker {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .landscape-blocker .rotate-icon {
+            font-size: 64px;
+            animation: rotateHint 2s ease-in-out infinite;
+        }
+
+        .landscape-blocker p {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 20px;
+            color: #ffd93d;
+            text-shadow: 0 0 15px rgba(255, 217, 61, 0.3);
+        }
+
+        @keyframes rotateHint {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-20deg); }
+            75% { transform: rotate(20deg); }
+        }
         
         .title {
             position: fixed;
@@ -673,9 +715,32 @@
         body {
             overscroll-behavior: none;
         }
+
+        /* Mobile title styles - must come after base styles */
+        @media (max-width: 768px) {
+            .title {
+                top: max(50px, calc(env(safe-area-inset-top) + 30px));
+            }
+
+            .title h1 {
+                font-size: clamp(36px, 11vw, 52px);
+            }
+
+            .title p {
+                font-size: clamp(14px, 4vw, 18px);
+                margin-top: 10px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Landscape Orientation Blocker -->
+    <div class="landscape-blocker">
+        <div class="rotate-icon">📱</div>
+        <p>Bitte drehe dein Handy!</p>
+        <p style="font-size: 14px; color: rgba(255,255,255,0.6);">Dieses Spiel funktioniert nur im Hochformat</p>
+    </div>
+
     <!-- Password Screen -->
     <div id="password-screen">
         <div class="gift-icon">🎁</div>
@@ -822,6 +887,12 @@
                     image: 'https://images.unsplash.com/photo-1494256997604-768d1f608cac?w=400',
                     title: 'Kuschelzeit',
                     text: 'Diese Karte steht für all die gemütlichen Abende, die wir zusammen verbracht haben.'
+                },
+                {
+                    id: 7,
+                    image: 'images/c94fc657-17cd-474a-bb8e-99dea3dd89d4.JPG',
+                    title: 'Kuschelzeit',
+                    text: 'Die aller süßeste Caro von allen! Mit dem süßesten Knaben der Stadt am Strand von Batumi.'
                 }
             ];
 
