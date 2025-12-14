@@ -956,21 +956,27 @@
             const topHalfGeo = new THREE.SphereGeometry(0.22, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
             let currentCapsuleColor = capsuleColors[0];
             let topHalfMat = createMaterial(currentCapsuleColor, 0.25, 0.25);
+            topHalfMat.side = THREE.DoubleSide;
             const topHalf = new THREE.Mesh(topHalfGeo, topHalfMat);
-            
+
             const topDiscGeo = new THREE.CircleGeometry(0.22, 32);
-            const topDisc = new THREE.Mesh(topDiscGeo, topHalfMat);
+            const topDiscMat = createMaterial(currentCapsuleColor, 0.25, 0.25);
+            topDiscMat.side = THREE.DoubleSide;
+            const topDisc = new THREE.Mesh(topDiscGeo, topDiscMat);
             topDisc.rotation.x = Math.PI / 2;
             topHalf.add(topDisc);
-            
-            const bottomHalfGeo = new THREE.SphereGeometry(0.22, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+
+            // Untere Halbkugel: theta von PI/2 bis PI (echte untere Hälfte)
+            const bottomHalfGeo = new THREE.SphereGeometry(0.22, 32, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
             let bottomHalfMat = createMaterial(0xffffff, 0.3, 0.15);
+            bottomHalfMat.side = THREE.DoubleSide;
             const bottomHalf = new THREE.Mesh(bottomHalfGeo, bottomHalfMat);
-            bottomHalf.rotation.x = Math.PI;
-            
+
             const bottomDiscGeo = new THREE.CircleGeometry(0.22, 32);
-            const bottomDisc = new THREE.Mesh(bottomDiscGeo, bottomHalfMat);
-            bottomDisc.rotation.x = -Math.PI / 2;
+            const bottomDiscMat = createMaterial(0xffffff, 0.3, 0.15);
+            bottomDiscMat.side = THREE.DoubleSide;
+            const bottomDisc = new THREE.Mesh(bottomDiscGeo, bottomDiscMat);
+            bottomDisc.rotation.x = Math.PI / 2;
             bottomHalf.add(bottomDisc);
             
             capsuleGroup.add(topHalf);
@@ -1090,7 +1096,7 @@
                 topHalf.position.y = 0;
                 bottomHalf.position.y = 0;
                 topHalf.rotation.set(0, 0, 0);
-                bottomHalf.rotation.set(Math.PI, 0, 0);
+                bottomHalf.rotation.set(0, 0, 0);
                 capsuleGroup.position.set(0, 0, 2);
                 capsuleGroup.rotation.set(0, 0, 0);
                 capsuleGroup.scale.set(1, 1, 1);
@@ -1103,7 +1109,7 @@
                 
                 currentCapsuleColor = capsuleColors[Math.floor(Math.random() * capsuleColors.length)];
                 topHalf.material.color.setHex(currentCapsuleColor);
-                topDisc.material = topHalf.material;
+                topDisc.material.color.setHex(currentCapsuleColor);
                 
                 coin.visible = true;
                 coin.position.copy(coinStartPos);
@@ -1281,7 +1287,7 @@
                         topHalf.rotation.x = -openAmount * 0.5;
                         topHalf.rotation.z = openAmount * 0.15;
                         
-                        bottomHalf.rotation.x = Math.PI + openAmount * 0.5;
+                        bottomHalf.rotation.x = openAmount * 0.5;
                         bottomHalf.rotation.z = -openAmount * 0.15;
                     }
                     
