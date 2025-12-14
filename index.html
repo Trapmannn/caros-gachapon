@@ -170,46 +170,94 @@
         .top-row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .coin-counter {
+        /* Unified button style for top row */
+        .top-btn {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 50px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50px;
-            padding: 10px 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        .coin-icon {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(145deg, #ffd700, #ffaa00);
-            border-radius: 50%;
+            color: white;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            color: #8B4513;
-            font-size: 16px;
-            box-shadow: 
-                inset 0 -2px 4px rgba(0,0,0,0.3),
-                inset 0 2px 4px rgba(255,255,255,0.3),
-                0 2px 6px rgba(255, 215, 0, 0.4);
-            font-family: 'Fredoka', sans-serif;
+            gap: 5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
         }
-        
-        .coin-count {
+
+        .top-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Coin info modal */
+        .coin-info-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+            padding: 20px;
+        }
+
+        .coin-info-modal.active {
+            display: flex;
+        }
+
+        .coin-info-content {
+            background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 320px;
+            text-align: center;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .coin-info-content .info-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .coin-info-content p {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .coin-info-content button {
             font-family: 'Fredoka', sans-serif;
-            font-size: 22px;
-            font-weight: 600;
-            color: #fff;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-size: 14px;
+            padding: 12px 30px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .coin-info-content button:active {
+            background: rgba(255, 255, 255, 0.1);
         }
         
         .insert-btn {
@@ -493,39 +541,6 @@
             transform: scale(0.98);
         }
 
-        /* Gallery Button - positioned in bottom UI */
-        .gallery-btn {
-            font-family: 'Fredoka', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 10px 18px;
-            border: none;
-            border-radius: 50px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s ease;
-        }
-
-        .gallery-btn:active {
-            transform: scale(0.95);
-        }
-
-        .gallery-btn .count {
-            background: linear-gradient(145deg, #ffd93d, #f4a51c);
-            color: #1a1a2e;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
         /* Card spin animation - emerges from capsule */
         .card-modal.emerging {
             background: transparent;
@@ -759,15 +774,26 @@
 
     <div class="ui-overlay">
         <div class="top-row">
-            <div class="coin-counter">
-                <div class="coin-icon">¢</div>
-                <span class="coin-count" id="coin-count">10</span>
-            </div>
-            <button class="gallery-btn" id="gallery-btn">
-                📚 Sammlung <span class="count" id="collection-count">0</span>
+            <button class="top-btn" id="coin-btn">
+                🪙 <span id="coin-count">10</span> Münzen
+            </button>
+            <button class="top-btn" id="gallery-btn">
+                📚 Sammlung <span id="collection-count">0</span>
+            </button>
+            <button class="top-btn" id="minigame-btn">
+                🎮 Minigame
             </button>
         </div>
         <button class="insert-btn" id="insert-btn">🪙 Münze einwerfen</button>
+    </div>
+
+    <!-- Coin Info Modal -->
+    <div class="coin-info-modal" id="coin-info-modal">
+        <div class="coin-info-content">
+            <div class="info-icon">💰</div>
+            <p>Spiele ein Spiel oder biete deinem Freund eine Gegenleistung für mehr Münzen.</p>
+            <button id="close-coin-info">Verstanden</button>
+        </div>
     </div>
 
     <!-- Card Reveal Modal -->
@@ -1650,6 +1676,14 @@
             const viewCardText = document.getElementById('view-card-text');
             const closeViewModal = document.getElementById('close-view-modal');
 
+            // Coin info modal elements
+            const coinBtn = document.getElementById('coin-btn');
+            const coinInfoModal = document.getElementById('coin-info-modal');
+            const closeCoinInfo = document.getElementById('close-coin-info');
+
+            // Minigame button
+            const minigameBtn = document.getElementById('minigame-btn');
+
             // Insert coin handler
             insertBtn.addEventListener('click', handleInsert);
             insertBtn.addEventListener('touchend', (e) => {
@@ -1712,6 +1746,32 @@
             function closeGallery() {
                 galleryModal.classList.remove('active');
             }
+
+            // Coin info handlers
+            coinBtn.addEventListener('click', openCoinInfo);
+            coinBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                openCoinInfo();
+            });
+
+            closeCoinInfo.addEventListener('click', closeCoinInfoModal);
+            closeCoinInfo.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                closeCoinInfoModal();
+            });
+
+            function openCoinInfo() {
+                coinInfoModal.classList.add('active');
+            }
+
+            function closeCoinInfoModal() {
+                coinInfoModal.classList.remove('active');
+            }
+
+            // Minigame handler (placeholder for now)
+            minigameBtn.addEventListener('click', () => {
+                // TODO: Implement minigame
+            });
 
             function renderGallery() {
                 const collected = getCollectedCards();
