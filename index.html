@@ -289,8 +289,8 @@
             50% { background-position: 100% 50%; }
         }
         
-        /* Prize reveal modal */
-        .prize-modal {
+        /* Card reveal modal */
+        .card-modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -306,14 +306,16 @@
             padding: 20px;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
+            flex-direction: column;
+            gap: 20px;
         }
-        
-        .prize-modal.active {
+
+        .card-modal.active {
             display: flex;
             opacity: 1;
         }
-        
-        .prize-content {
+
+        .card-modal-content {
             text-align: center;
             transform: scale(0.5);
             opacity: 0;
@@ -321,47 +323,105 @@
             width: 100%;
             max-width: 350px;
         }
-        
-        .prize-modal.active .prize-content {
+
+        .card-modal.active .card-modal-content {
             transform: scale(1);
             opacity: 1;
         }
-        
-        .prize-image-container {
-            width: min(280px, 80vw);
-            height: min(280px, 80vw);
-            border-radius: 20px;
-            overflow: hidden;
-            margin: 0 auto 25px;
-            box-shadow: 
-                0 0 60px rgba(255, 215, 0, 0.3),
-                0 20px 60px rgba(0, 0, 0, 0.5);
-            border: 4px solid rgba(255, 215, 0, 0.5);
-            position: relative;
-        }
-        
-        .prize-image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .prize-label {
+
+        .card-label {
             font-family: 'Fredoka', sans-serif;
             font-size: clamp(24px, 6vw, 32px);
             font-weight: 700;
             color: #ffd700;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
             text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
-        
-        .prize-name {
-            font-family: 'Outfit', sans-serif;
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 25px;
+
+        /* Flip Card */
+        .flip-card {
+            width: min(280px, 75vw);
+            height: min(380px, 100vw);
+            perspective: 1000px;
+            margin: 0 auto 20px;
+            cursor: pointer;
         }
-        
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow:
+                0 0 40px rgba(255, 215, 0, 0.3),
+                0 15px 40px rgba(0, 0, 0, 0.5);
+            border: 4px solid rgba(255, 215, 0, 0.5);
+        }
+
+        .flip-card-front {
+            background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+        }
+
+        .flip-card-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .flip-card-back {
+            background: linear-gradient(145deg, #ffd93d, #f4a51c);
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 25px;
+        }
+
+        .flip-card-back .card-text {
+            font-family: 'Fredoka', sans-serif;
+            font-size: clamp(16px, 4vw, 20px);
+            color: #1a1a2e;
+            text-align: center;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .flip-card-back .card-title {
+            font-family: 'Fredoka', sans-serif;
+            font-size: clamp(20px, 5vw, 26px);
+            color: #1a1a2e;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .tap-hint {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 10px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
         .close-btn {
             font-family: 'Fredoka', sans-serif;
             font-size: 16px;
@@ -374,12 +434,160 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        
+
         .close-btn:active {
             background: rgba(255, 255, 255, 0.15);
             transform: scale(0.98);
         }
-        
+
+        /* Gallery Button */
+        .gallery-btn {
+            position: fixed;
+            top: max(20px, env(safe-area-inset-top));
+            right: 20px;
+            z-index: 100;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .gallery-btn:active {
+            transform: scale(0.95);
+        }
+
+        .gallery-btn .count {
+            background: linear-gradient(145deg, #ffd93d, #f4a51c);
+            color: #1a1a2e;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        /* Gallery Modal */
+        .gallery-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .gallery-header {
+            padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gallery-header h2 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: clamp(20px, 5vw, 28px);
+            color: #ffd93d;
+            text-shadow: 0 0 15px rgba(255, 217, 61, 0.3);
+        }
+
+        .gallery-close {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 14px;
+            padding: 10px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+        }
+
+        .gallery-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            align-content: start;
+        }
+
+        .gallery-card {
+            aspect-ratio: 3/4;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 3px solid rgba(255, 215, 0, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+        }
+
+        .gallery-card:active {
+            transform: scale(0.95);
+        }
+
+        .gallery-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-card .card-number {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffd93d;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .gallery-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+        }
+
+        .gallery-empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .gallery-stats {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
         .sparkle {
             position: absolute;
             width: 10px;
@@ -389,7 +597,7 @@
             pointer-events: none;
             animation: sparkle 1s ease-out forwards;
         }
-        
+
         @keyframes sparkle {
             0% {
                 transform: scale(0) rotate(0deg);
@@ -400,7 +608,7 @@
                 opacity: 0;
             }
         }
-        
+
         body {
             overscroll-behavior: none;
         }
@@ -423,6 +631,11 @@
         <p>Wirf eine Münze ein!</p>
     </div>
     
+    <!-- Gallery Button -->
+    <button class="gallery-btn" id="gallery-btn">
+        📚 Sammlung <span class="count" id="collection-count">0</span>
+    </button>
+
     <div class="ui-overlay">
         <div class="coin-counter">
             <div class="coin-icon">¢</div>
@@ -430,15 +643,57 @@
         </div>
         <button class="insert-btn" id="insert-btn">🪙 Münze einwerfen</button>
     </div>
-    
-    <div class="prize-modal" id="prize-modal">
-        <div class="prize-content">
-            <div class="prize-label">★ GEWONNEN! ★</div>
-            <div class="prize-image-container">
-                <img id="prize-image" src="" alt="Prize">
+
+    <!-- Card Reveal Modal -->
+    <div class="card-modal" id="card-modal">
+        <div class="card-modal-content">
+            <div class="card-label">★ NEUE KARTE! ★</div>
+            <p class="tap-hint">Tippe auf die Karte zum Umdrehen</p>
+            <div class="flip-card" id="flip-card">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <img id="card-image" src="" alt="Card">
+                    </div>
+                    <div class="flip-card-back">
+                        <div class="card-title" id="card-title">Titel</div>
+                        <div class="card-text" id="card-text">Text der Karte</div>
+                    </div>
+                </div>
             </div>
-            <div class="prize-name" id="prize-name">Dein Preis!</div>
-            <button class="close-btn" id="close-modal">Weiter spielen</button>
+            <button class="close-btn" id="close-card-modal">Weiter spielen</button>
+        </div>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div class="gallery-modal" id="gallery-modal">
+        <div class="gallery-header">
+            <div>
+                <h2>📚 Meine Sammlung</h2>
+                <p class="gallery-stats" id="gallery-stats">0 / 0 Karten gesammelt</p>
+            </div>
+            <button class="gallery-close" id="gallery-close">Zurück</button>
+        </div>
+        <div class="gallery-grid" id="gallery-grid">
+            <!-- Cards will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Card View Modal (for viewing cards from gallery) -->
+    <div class="card-modal" id="card-view-modal">
+        <div class="card-modal-content">
+            <p class="tap-hint">Tippe auf die Karte zum Umdrehen</p>
+            <div class="flip-card" id="view-flip-card">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <img id="view-card-image" src="" alt="Card">
+                    </div>
+                    <div class="flip-card-back">
+                        <div class="card-title" id="view-card-title">Titel</div>
+                        <div class="card-text" id="view-card-text">Text der Karte</div>
+                    </div>
+                </div>
+            </div>
+            <button class="close-btn" id="close-view-modal">Schließen</button>
         </div>
     </div>
 
@@ -468,20 +723,84 @@
         
         // Game initialization
         function initGame() {
+            // ===== CARD COLLECTION SYSTEM =====
+            // Define all available cards - ADD YOUR OWN CARDS HERE!
+            const allCards = [
+                {
+                    id: 1,
+                    image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400',
+                    title: 'Süße Katze',
+                    text: 'Diese kleine Katze erinnert mich an unseren ersten gemeinsamen Abend. Du hast gesagt, du liebst Katzen mehr als alles andere!'
+                },
+                {
+                    id: 2,
+                    image: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400',
+                    title: 'Neugieriger Blick',
+                    text: 'So schaust du mich immer an, wenn ich etwas Lustiges sage. Dieser Blick ist unbezahlbar!'
+                },
+                {
+                    id: 3,
+                    image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400',
+                    title: 'Treuer Freund',
+                    text: 'Ein Hund ist der beste Freund des Menschen - aber du bist mein allerbester Freund!'
+                },
+                {
+                    id: 4,
+                    image: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=400',
+                    title: 'Flauschiges Wunder',
+                    text: 'Weißt du noch, als wir zusammen im Park waren und diesen süßen Hund gesehen haben?'
+                },
+                {
+                    id: 5,
+                    image: 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=400',
+                    title: 'Kleine Pfoten',
+                    text: 'Manchmal wünsche ich mir, wir hätten zusammen ein kleines Haustier. Was meinst du?'
+                },
+                {
+                    id: 6,
+                    image: 'https://images.unsplash.com/photo-1494256997604-768d1f608cac?w=400',
+                    title: 'Kuschelzeit',
+                    text: 'Diese Karte steht für all die gemütlichen Abende, die wir zusammen verbracht haben.'
+                }
+            ];
+
+            // Load collected cards from localStorage
+            const STORAGE_KEY = 'caros_gachapon_collection';
+            let collectedCardIds = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+            function saveCollection() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(collectedCardIds));
+            }
+
+            function getAvailableCards() {
+                return allCards.filter(card => !collectedCardIds.includes(card.id));
+            }
+
+            function getCollectedCards() {
+                return allCards.filter(card => collectedCardIds.includes(card.id));
+            }
+
+            function collectCard(cardId) {
+                if (!collectedCardIds.includes(cardId)) {
+                    collectedCardIds.push(cardId);
+                    saveCollection();
+                    updateCollectionCount();
+                }
+            }
+
+            function updateCollectionCount() {
+                const countEl = document.getElementById('collection-count');
+                countEl.textContent = collectedCardIds.length;
+            }
+
+            // Initialize collection count
+            updateCollectionCount();
+
             // Game state
             let coins = 10;
             let isAnimating = false;
             let isShaking = false;
-            
-            // Example images
-            const prizeImages = [
-                'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400',
-                'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400',
-                'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400',
-                'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=400',
-                'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=400',
-                'https://images.unsplash.com/photo-1494256997604-768d1f608cac?w=400'
-            ];
+            let currentCard = null;
             
             // Three.js setup
             const container = document.getElementById('canvas-container');
@@ -1047,42 +1366,148 @@
             const coinStartPos = new THREE.Vector3(-2, 1.8, 3);
             const coinTargetPos = new THREE.Vector3(-0.5, 1.1, 0.72);
             
-            function getRandomImage() {
-                return prizeImages[Math.floor(Math.random() * prizeImages.length)];
+            function drawRandomCard() {
+                const available = getAvailableCards();
+                if (available.length === 0) return null;
+                return available[Math.floor(Math.random() * available.length)];
             }
-            
+
+            // DOM Elements
             const insertBtn = document.getElementById('insert-btn');
             const coinCountEl = document.getElementById('coin-count');
-            const prizeModal = document.getElementById('prize-modal');
-            const prizeImage = document.getElementById('prize-image');
-            const closeModal = document.getElementById('close-modal');
-            
+            const cardModal = document.getElementById('card-modal');
+            const cardImage = document.getElementById('card-image');
+            const cardTitle = document.getElementById('card-title');
+            const cardText = document.getElementById('card-text');
+            const flipCard = document.getElementById('flip-card');
+            const closeCardModal = document.getElementById('close-card-modal');
+
+            // Gallery elements
+            const galleryBtn = document.getElementById('gallery-btn');
+            const galleryModal = document.getElementById('gallery-modal');
+            const galleryClose = document.getElementById('gallery-close');
+            const galleryGrid = document.getElementById('gallery-grid');
+            const galleryStats = document.getElementById('gallery-stats');
+
+            // Card view modal elements
+            const cardViewModal = document.getElementById('card-view-modal');
+            const viewFlipCard = document.getElementById('view-flip-card');
+            const viewCardImage = document.getElementById('view-card-image');
+            const viewCardTitle = document.getElementById('view-card-title');
+            const viewCardText = document.getElementById('view-card-text');
+            const closeViewModal = document.getElementById('close-view-modal');
+
+            // Insert coin handler
             insertBtn.addEventListener('click', handleInsert);
             insertBtn.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 handleInsert();
             });
-            
+
             function handleInsert() {
-                if (coins > 0 && !isAnimating) {
+                const available = getAvailableCards();
+                if (coins > 0 && !isAnimating && available.length > 0) {
                     coins--;
                     coinCountEl.textContent = coins;
+                    currentCard = drawRandomCard();
                     startAnimation();
+                } else if (available.length === 0) {
+                    alert('Du hast bereits alle Karten gesammelt! 🎉');
                 }
             }
-            
-            closeModal.addEventListener('click', closeModalHandler);
-            closeModal.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                closeModalHandler();
+
+            // Card modal handlers
+            flipCard.addEventListener('click', () => {
+                flipCard.classList.toggle('flipped');
             });
-            
-            function closeModalHandler() {
-                prizeModal.classList.remove('active');
+
+            closeCardModal.addEventListener('click', closeCardModalHandler);
+            closeCardModal.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                closeCardModalHandler();
+            });
+
+            function closeCardModalHandler() {
+                cardModal.classList.remove('active');
+                flipCard.classList.remove('flipped');
                 capsuleGroup.visible = false;
                 particlesGroup.visible = false;
             }
-            
+
+            // Gallery handlers
+            galleryBtn.addEventListener('click', openGallery);
+            galleryBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                openGallery();
+            });
+
+            galleryClose.addEventListener('click', closeGallery);
+            galleryClose.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                closeGallery();
+            });
+
+            function openGallery() {
+                renderGallery();
+                galleryModal.classList.add('active');
+            }
+
+            function closeGallery() {
+                galleryModal.classList.remove('active');
+            }
+
+            function renderGallery() {
+                const collected = getCollectedCards();
+                galleryStats.textContent = `${collected.length} / ${allCards.length} Karten gesammelt`;
+
+                galleryGrid.innerHTML = '';
+
+                if (collected.length === 0) {
+                    galleryGrid.innerHTML = `
+                        <div class="gallery-empty">
+                            <div class="gallery-empty-icon">🎰</div>
+                            <p>Du hast noch keine Karten gesammelt.</p>
+                            <p>Wirf eine Münze ein!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                collected.forEach((card, index) => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'gallery-card';
+                    cardEl.innerHTML = `
+                        <img src="${card.image}" alt="${card.title}">
+                        <span class="card-number">#${card.id}</span>
+                    `;
+                    cardEl.addEventListener('click', () => viewCard(card));
+                    galleryGrid.appendChild(cardEl);
+                });
+            }
+
+            function viewCard(card) {
+                viewCardImage.src = card.image;
+                viewCardTitle.textContent = card.title;
+                viewCardText.textContent = card.text;
+                viewFlipCard.classList.remove('flipped');
+                cardViewModal.classList.add('active');
+            }
+
+            viewFlipCard.addEventListener('click', () => {
+                viewFlipCard.classList.toggle('flipped');
+            });
+
+            closeViewModal.addEventListener('click', () => {
+                cardViewModal.classList.remove('active');
+                viewFlipCard.classList.remove('flipped');
+            });
+
+            closeViewModal.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                cardViewModal.classList.remove('active');
+                viewFlipCard.classList.remove('flipped');
+            });
+
             function startAnimation() {
                 isAnimating = true;
                 isShaking = false;
@@ -1091,7 +1516,7 @@
                 animationProgress = 0;
                 knobRotation = 0;
                 particleFrame = 0;
-                
+
                 capsuleGroup.visible = false;
                 topHalf.position.y = 0;
                 bottomHalf.position.y = 0;
@@ -1100,32 +1525,40 @@
                 capsuleGroup.position.set(0, 0, 2);
                 capsuleGroup.rotation.set(0, 0, 0);
                 capsuleGroup.scale.set(1, 1, 1);
-                
+
                 particles.forEach(p => {
                     p.material.opacity = 0;
                     p.userData.life = 0;
                 });
                 particlesGroup.visible = false;
-                
+
                 currentCapsuleColor = capsuleColors[Math.floor(Math.random() * capsuleColors.length)];
                 topHalf.material.color.setHex(currentCapsuleColor);
                 topDisc.material.color.setHex(currentCapsuleColor);
-                
+
                 coin.visible = true;
                 coin.position.copy(coinStartPos);
                 coin.rotation.set(Math.PI / 2, 0, 0);
             }
-            
-            function showPrize() {
-                const image = getRandomImage();
-                prizeImage.src = image;
-                
+
+            function showCard() {
+                if (!currentCard) return;
+
+                // Add card to collection
+                collectCard(currentCard.id);
+
+                // Set card content
+                cardImage.src = currentCard.image;
+                cardTitle.textContent = currentCard.title;
+                cardText.textContent = currentCard.text;
+                flipCard.classList.remove('flipped');
+
                 setTimeout(() => {
-                    prizeModal.classList.add('active');
+                    cardModal.classList.add('active');
                     createSparkles();
                 }, 400);
             }
-            
+
             function createSparkles() {
                 for (let i = 0; i < 15; i++) {
                     setTimeout(() => {
@@ -1135,8 +1568,8 @@
                         sparkle.style.top = (Math.random() * 100) + '%';
                         sparkle.style.width = (5 + Math.random() * 10) + 'px';
                         sparkle.style.height = sparkle.style.width;
-                        prizeModal.appendChild(sparkle);
-                        
+                        cardModal.appendChild(sparkle);
+
                         setTimeout(() => sparkle.remove(), 1000);
                     }, i * 50);
                 }
@@ -1295,7 +1728,7 @@
                         animationPhase = 'idle';
                         isAnimating = false;
                         insertBtn.disabled = false;
-                        showPrize();
+                        showCard();
                     }
                 }
                 
