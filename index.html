@@ -166,7 +166,13 @@
             width: 100%;
             max-width: 400px;
         }
-        
+
+        .top-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         .coin-counter {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
@@ -310,6 +316,11 @@
             gap: 20px;
         }
 
+        /* Card view modal (from gallery) needs higher z-index */
+        #card-view-modal {
+            z-index: 3000;
+        }
+
         .card-modal.active {
             display: flex;
             opacity: 1;
@@ -440,12 +451,8 @@
             transform: scale(0.98);
         }
 
-        /* Gallery Button */
+        /* Gallery Button - positioned in bottom UI */
         .gallery-btn {
-            position: fixed;
-            top: max(20px, env(safe-area-inset-top));
-            right: 20px;
-            z-index: 100;
             font-family: 'Fredoka', sans-serif;
             font-size: 14px;
             font-weight: 600;
@@ -475,6 +482,60 @@
             padding: 2px 8px;
             border-radius: 20px;
             font-size: 12px;
+        }
+
+        /* Card spin animation - emerges from capsule */
+        .card-modal.emerging {
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .card-modal.emerging .card-modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .card-modal.emerging .card-label,
+        .card-modal.emerging .tap-hint,
+        .card-modal.emerging .close-btn {
+            opacity: 0;
+        }
+
+        .card-modal.emerging .flip-card-inner {
+            animation: cardEmerge 2s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+        }
+
+        .card-modal.revealed .flip-card-inner {
+            animation: none;
+        }
+
+        .card-modal.revealed .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-modal.revealed {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .card-modal.revealed .card-label,
+        .card-modal.revealed .tap-hint,
+        .card-modal.revealed .close-btn {
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        @keyframes cardEmerge {
+            0% {
+                transform: rotateY(0deg) scale(0.15) translateY(250px);
+                opacity: 0;
+            }
+            15% {
+                opacity: 1;
+            }
+            100% {
+                transform: rotateY(1080deg) scale(1) translateY(0);
+            }
         }
 
         /* Gallery Modal */
@@ -630,16 +691,16 @@
         <h1>Caro's Gachapon</h1>
         <p>Wirf eine Münze ein!</p>
     </div>
-    
-    <!-- Gallery Button -->
-    <button class="gallery-btn" id="gallery-btn">
-        📚 Sammlung <span class="count" id="collection-count">0</span>
-    </button>
 
     <div class="ui-overlay">
-        <div class="coin-counter">
-            <div class="coin-icon">¢</div>
-            <span class="coin-count" id="coin-count">10</span>
+        <div class="top-row">
+            <div class="coin-counter">
+                <div class="coin-icon">¢</div>
+                <span class="coin-count" id="coin-count">10</span>
+            </div>
+            <button class="gallery-btn" id="gallery-btn">
+                📚 Sammlung <span class="count" id="collection-count">0</span>
+            </button>
         </div>
         <button class="insert-btn" id="insert-btn">🪙 Münze einwerfen</button>
     </div>
@@ -796,6 +857,145 @@
             // Initialize collection count
             updateCollectionCount();
 
+            // ===== SOUND EFFECTS =====
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            let audioCtx = null;
+
+            function initAudio() {
+                if (!audioCtx) {
+                    audioCtx = new AudioContext();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+
+            function playSound(type) {
+                if (!audioCtx) return;
+
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'coin') {
+                    // Coin insert sound - metallic clink
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(1200, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.2);
+
+                    // Second clink
+                    setTimeout(() => {
+                        const osc2 = audioCtx.createOscillator();
+                        const gain2 = audioCtx.createGain();
+                        osc2.connect(gain2);
+                        gain2.connect(audioCtx.destination);
+                        osc2.type = 'sine';
+                        osc2.frequency.setValueAtTime(1400, audioCtx.currentTime);
+                        osc2.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.08);
+                        gain2.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                        gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                        osc2.start();
+                        osc2.stop(audioCtx.currentTime + 0.15);
+                    }, 80);
+                }
+                else if (type === 'turn') {
+                    // Knob turning - mechanical ratchet
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(150, now);
+                    gainNode.gain.setValueAtTime(0.15, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.8);
+
+                    // Click sounds
+                    for (let i = 0; i < 6; i++) {
+                        setTimeout(() => {
+                            const click = audioCtx.createOscillator();
+                            const clickGain = audioCtx.createGain();
+                            click.connect(clickGain);
+                            clickGain.connect(audioCtx.destination);
+                            click.type = 'square';
+                            click.frequency.setValueAtTime(300 + Math.random() * 100, audioCtx.currentTime);
+                            clickGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                            clickGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                            click.start();
+                            click.stop(audioCtx.currentTime + 0.05);
+                        }, i * 120);
+                    }
+                }
+                else if (type === 'drop') {
+                    // Ball drop - hollow thud
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(200, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+                    gainNode.gain.setValueAtTime(0.4, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.3);
+                }
+                else if (type === 'open') {
+                    // Capsule open - pop with sparkle
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(400, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.2);
+
+                    // Sparkle sounds
+                    for (let i = 0; i < 5; i++) {
+                        setTimeout(() => {
+                            const sparkle = audioCtx.createOscillator();
+                            const sparkleGain = audioCtx.createGain();
+                            sparkle.connect(sparkleGain);
+                            sparkleGain.connect(audioCtx.destination);
+                            sparkle.type = 'sine';
+                            sparkle.frequency.setValueAtTime(1500 + Math.random() * 1000, audioCtx.currentTime);
+                            sparkleGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                            sparkleGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                            sparkle.start();
+                            sparkle.stop(audioCtx.currentTime + 0.1);
+                        }, i * 60);
+                    }
+                }
+                else if (type === 'reveal') {
+                    // Card reveal - triumphant fanfare
+                    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+                    notes.forEach((freq, i) => {
+                        setTimeout(() => {
+                            const note = audioCtx.createOscillator();
+                            const noteGain = audioCtx.createGain();
+                            note.connect(noteGain);
+                            noteGain.connect(audioCtx.destination);
+                            note.type = 'sine';
+                            note.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                            noteGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                            noteGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                            note.start();
+                            note.stop(audioCtx.currentTime + 0.3);
+                        }, i * 100);
+                    });
+                }
+                else if (type === 'flip') {
+                    // Card flip - whoosh
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(200, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.15);
+                    gainNode.gain.setValueAtTime(0.1, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.2);
+                }
+            }
+
             // Game state
             let coins = 10;
             let isAnimating = false;
@@ -950,81 +1150,75 @@
             lowerTrim.castShadow = true;
             machineGroup.add(lowerTrim);
             
-            // ===== GLOBE HOUSING - Integrated into body =====
-            // Circular cutout frame that holds the globe
-            const globeFrameGeo = new THREE.TorusGeometry(0.95, 0.08, 16, 48);
-            const globeFrame = new THREE.Mesh(globeFrameGeo, bodyMaterial);
-            globeFrame.position.y = 2.65;
-            globeFrame.position.z = 0.02;
-            globeFrame.rotation.x = Math.PI / 2;
-            machineGroup.add(globeFrame);
-            
-            // Inner dark ring (where globe sits)
-            const innerRingGeo = new THREE.TorusGeometry(0.92, 0.04, 12, 48);
-            const innerRing = new THREE.Mesh(innerRingGeo, darkMetalMaterial);
-            innerRing.position.y = 2.65;
-            innerRing.position.z = 0.06;
-            innerRing.rotation.x = Math.PI / 2;
-            machineGroup.add(innerRing);
-            
+            // ===== GLOBE HOUSING - Flush with machine body =====
+            // Base ring where globe meets the body (flush with machine width)
+            const globeBaseRingGeo = new THREE.TorusGeometry(0.95, 0.06, 16, 48);
+            const globeBaseRing = new THREE.Mesh(globeBaseRingGeo, metalMaterial);
+            globeBaseRing.position.y = 2.65;
+            globeBaseRing.position.z = 0.0;
+            globeBaseRing.rotation.x = Math.PI / 2;
+            machineGroup.add(globeBaseRing);
+
             // Gold decorative ring
-            const decorRingGeo = new THREE.TorusGeometry(0.88, 0.03, 12, 48);
+            const decorRingGeo = new THREE.TorusGeometry(0.92, 0.03, 12, 48);
             const decorRing = new THREE.Mesh(decorRingGeo, goldMaterial);
             decorRing.position.y = 2.65;
-            decorRing.position.z = 0.1;
+            decorRing.position.z = 0.04;
             decorRing.rotation.x = Math.PI / 2;
             machineGroup.add(decorRing);
-            
-            // ===== GLASS GLOBE - Positioned to sit inside the housing =====
-            const globeGeo = new THREE.SphereGeometry(0.85, 48, 48);
-            const globe = new THREE.Mesh(globeGeo, glassMaterial);
-            globe.position.y = 3.35;
-            globe.scale.set(1, 0.85, 0.9);
-            machineGroup.add(globe);
-            
-            // Highlight on glass
-            const highlightRingGeo = new THREE.TorusGeometry(0.5, 0.012, 8, 32);
-            const highlightMat = new THREE.MeshBasicMaterial({ 
-                color: 0xffffff, 
-                transparent: true, 
-                opacity: 0.35 
-            });
-            const highlightRing = new THREE.Mesh(highlightRingGeo, highlightMat);
-            highlightRing.position.set(0.18, 3.5, 0.3);
-            highlightRing.rotation.set(0.5, 0.3, 0.2);
-            machineGroup.add(highlightRing);
-            
-            // Globe top ring
-            const topRingGeo = new THREE.TorusGeometry(0.38, 0.04, 12, 32);
-            const topRing = new THREE.Mesh(topRingGeo, metalMaterial);
-            topRing.position.y = 4.0;
-            topRing.rotation.x = Math.PI / 2;
-            machineGroup.add(topRing);
+
+            // ===== GLASS DOME - Large hemisphere flush with machine =====
+            const domeGeo = new THREE.SphereGeometry(0.95, 48, 48, 0, Math.PI * 2, 0, Math.PI / 2);
+            const dome = new THREE.Mesh(domeGeo, glassMaterial);
+            dome.position.y = 2.65;
+            dome.scale.set(1, 1.1, 0.85);
+            machineGroup.add(dome);
+
             
             // ===== CAPSULE BALLS INSIDE =====
             const capsuleBalls = [];
-            const ballRadius = 0.11;
-            
+            const ballRadius = 0.14;
+
+            // Dome parameters: center at y=2.65, radius 0.95, scaled y by 1.1, z by 0.85
+            const domeBaseY = 2.65;
+            const domeRadius = 0.95;
+            const domeScaleY = 1.1;
+            const domeScaleZ = 0.85;
+
+            function isInsideDome(x, y, z) {
+                // Check if point is inside the scaled hemisphere
+                const relY = (y - domeBaseY) / domeScaleY;
+                const relZ = z / domeScaleZ;
+                const dist = Math.sqrt(x * x + relY * relY + relZ * relZ);
+                return dist < (domeRadius - ballRadius - 0.05) && y > domeBaseY;
+            }
+
             function generateBallPositions(count) {
                 const positions = [];
-                const minDist = ballRadius * 2.3;
-                
+                const minDist = ballRadius * 2.4;
+
                 for (let i = 0; i < count; i++) {
                     let attempts = 0;
                     let valid = false;
                     let pos;
-                    
-                    while (!valid && attempts < 100) {
+
+                    while (!valid && attempts < 150) {
                         const angle = Math.random() * Math.PI * 2;
                         const radius = Math.random() * 0.55;
-                        const height = 2.75 + Math.random() * 0.5;
-                        
+                        const height = domeBaseY + 0.15 + Math.random() * 0.65;
+
                         pos = {
                             x: Math.cos(angle) * radius,
                             y: height,
-                            z: Math.sin(angle) * radius * 0.7
+                            z: Math.sin(angle) * radius * 0.6
                         };
-                        
+
+                        // Check if inside dome
+                        if (!isInsideDome(pos.x, pos.y, pos.z)) {
+                            attempts++;
+                            continue;
+                        }
+
                         valid = true;
                         for (const other of positions) {
                             const dx = pos.x - other.x;
@@ -1038,15 +1232,15 @@
                         }
                         attempts++;
                     }
-                    
+
                     if (valid) {
                         positions.push(pos);
                     }
                 }
                 return positions;
             }
-            
-            const ballPositions = generateBallPositions(14);
+
+            const ballPositions = generateBallPositions(10);
             
             ballPositions.forEach((pos, i) => {
                 const ballGeo = new THREE.SphereGeometry(ballRadius, 24, 24);
@@ -1064,18 +1258,6 @@
                 machineGroup.add(ball);
             });
             
-            // ===== TOP CAP =====
-            const capConeGeo = new THREE.ConeGeometry(0.2, 0.25, 20);
-            const capCone = new THREE.Mesh(capConeGeo, redMaterial);
-            capCone.position.y = 4.18;
-            capCone.castShadow = true;
-            machineGroup.add(capCone);
-            
-            const capBallGeo = new THREE.SphereGeometry(0.08, 16, 16);
-            const capBall = new THREE.Mesh(capBallGeo, redMaterial);
-            capBall.position.y = 4.35;
-            capBall.castShadow = true;
-            machineGroup.add(capBall);
             
             // ===== FRONT PANEL =====
             const panelGeo = createRoundedBox(1.5, 1.1, 0.08, 0.04, 4);
@@ -1361,7 +1543,7 @@
             let animationProgress = 0;
             let knobRotation = 0;
             let particleFrame = 0;
-            const animationSpeed = 0.012;
+            const animationSpeed = 0.018;
             
             const coinStartPos = new THREE.Vector3(-2, 1.8, 3);
             const coinTargetPos = new THREE.Vector3(-0.5, 1.1, 0.72);
@@ -1407,10 +1589,12 @@
             function handleInsert() {
                 const available = getAvailableCards();
                 if (coins > 0 && !isAnimating && available.length > 0) {
+                    initAudio();
                     coins--;
                     coinCountEl.textContent = coins;
                     currentCard = drawRandomCard();
                     startAnimation();
+                    playSound('coin');
                 } else if (available.length === 0) {
                     alert('Du hast bereits alle Karten gesammelt! 🎉');
                 }
@@ -1419,6 +1603,7 @@
             // Card modal handlers
             flipCard.addEventListener('click', () => {
                 flipCard.classList.toggle('flipped');
+                playSound('flip');
             });
 
             closeCardModal.addEventListener('click', closeCardModalHandler);
@@ -1428,10 +1613,11 @@
             });
 
             function closeCardModalHandler() {
-                cardModal.classList.remove('active');
+                cardModal.classList.remove('active', 'emerging', 'revealed');
                 flipCard.classList.remove('flipped');
                 capsuleGroup.visible = false;
                 particlesGroup.visible = false;
+                cardAnimationStarted = false;
             }
 
             // Gallery handlers
@@ -1490,21 +1676,23 @@
                 viewCardTitle.textContent = card.title;
                 viewCardText.textContent = card.text;
                 viewFlipCard.classList.remove('flipped');
-                cardViewModal.classList.add('active');
+                cardViewModal.classList.remove('emerging');
+                cardViewModal.classList.add('active', 'revealed');
             }
 
             viewFlipCard.addEventListener('click', () => {
                 viewFlipCard.classList.toggle('flipped');
+                playSound('flip');
             });
 
             closeViewModal.addEventListener('click', () => {
-                cardViewModal.classList.remove('active');
+                cardViewModal.classList.remove('active', 'emerging', 'revealed');
                 viewFlipCard.classList.remove('flipped');
             });
 
             closeViewModal.addEventListener('touchend', (e) => {
                 e.preventDefault();
-                cardViewModal.classList.remove('active');
+                cardViewModal.classList.remove('active', 'emerging', 'revealed');
                 viewFlipCard.classList.remove('flipped');
             });
 
@@ -1516,6 +1704,7 @@
                 animationProgress = 0;
                 knobRotation = 0;
                 particleFrame = 0;
+                cardAnimationStarted = false;
 
                 capsuleGroup.visible = false;
                 topHalf.position.y = 0;
@@ -1541,11 +1730,11 @@
                 coin.rotation.set(Math.PI / 2, 0, 0);
             }
 
-            function showCard() {
-                if (!currentCard) return;
+            let cardAnimationStarted = false;
 
-                // Add card to collection
-                collectCard(currentCard.id);
+            function startCardReveal() {
+                if (!currentCard || cardAnimationStarted) return;
+                cardAnimationStarted = true;
 
                 // Set card content
                 cardImage.src = currentCard.image;
@@ -1553,10 +1742,29 @@
                 cardText.textContent = currentCard.text;
                 flipCard.classList.remove('flipped');
 
-                setTimeout(() => {
-                    cardModal.classList.add('active');
-                    createSparkles();
-                }, 400);
+                // Start emerging animation
+                cardModal.classList.remove('revealed');
+                cardModal.classList.add('active', 'emerging');
+                playSound('reveal');
+            }
+
+            function completeCardReveal() {
+                if (!currentCard) return;
+
+                // Add card to collection
+                collectCard(currentCard.id);
+
+                // Transition to revealed state
+                cardModal.classList.remove('emerging');
+                cardModal.classList.add('revealed');
+                createSparkles();
+
+                cardAnimationStarted = false;
+            }
+
+            function showCard() {
+                // Legacy function - now split into startCardReveal and completeCardReveal
+                completeCardReveal();
             }
 
             function createSparkles() {
@@ -1620,6 +1828,7 @@
                         animationPhase = 'knob-turn';
                         animationProgress = 0;
                         isShaking = true;
+                        playSound('turn');
                     }
                 }
                 else if (animationPhase === 'knob-turn') {
@@ -1680,22 +1889,22 @@
                 else if (animationPhase === 'ball-open') {
                     animationProgress += animationSpeed * 0.35;
                     particleFrame++;
-                    
+
                     const targetScale = 2.8;
                     const currentScale = 1 + easeOutCubic(animationProgress) * (targetScale - 1);
                     capsuleGroup.scale.set(currentScale, currentScale, currentScale);
-                    
+
                     capsuleGroup.position.y = 0.5 + easeOutCubic(animationProgress) * 1.0;
                     capsuleGroup.position.z = 2.5 + easeOutCubic(animationProgress) * 0.8;
                     capsuleGroup.rotation.y = animationProgress * 0.3;
-                    
+
                     particlesGroup.position.copy(capsuleGroup.position);
-                    
+
                     particles.forEach(p => {
                         if (particleFrame > p.userData.delay) {
                             p.userData.life++;
                             const lifeRatio = p.userData.life / p.userData.maxLife;
-                            
+
                             if (lifeRatio < 0.2) {
                                 p.material.opacity = lifeRatio * 5;
                             } else if (lifeRatio > 0.7) {
@@ -1703,27 +1912,32 @@
                             } else {
                                 p.material.opacity = 1;
                             }
-                            
+
                             p.position.add(p.userData.velocity);
                             p.userData.velocity.y -= 0.001;
                             p.rotation.z += p.userData.rotSpeed;
                         }
                     });
-                    
+
                     if (animationProgress > 0.25) {
                         const openProgress = (animationProgress - 0.25) / 0.75;
                         const openAmount = easeOutCubic(openProgress);
-                        
+
                         topHalf.position.y = openAmount * 0.4;
                         bottomHalf.position.y = -openAmount * 0.4;
-                        
+
                         topHalf.rotation.x = -openAmount * 0.5;
                         topHalf.rotation.z = openAmount * 0.15;
-                        
+
                         bottomHalf.rotation.x = openAmount * 0.5;
                         bottomHalf.rotation.z = -openAmount * 0.15;
+
+                        // Start card reveal when capsule starts opening
+                        if (openProgress > 0.1 && !cardAnimationStarted) {
+                            startCardReveal();
+                        }
                     }
-                    
+
                     if (animationProgress >= 1) {
                         animationPhase = 'idle';
                         isAnimating = false;
