@@ -94,14 +94,20 @@ function playNoCoinsSound() {
 }
 
 function playDuplicateSound() {
+    console.log('Versuche Duplikat-Sound abzuspielen');
     if (duplicateAudio) {
+        console.log('Duplikat-Audio gefunden');
         duplicateAudio.currentTime = 0;
         const playPromise = duplicateAudio.play();
         if (playPromise !== undefined) {
-            playPromise.catch((err) => {
+            playPromise.then(() => {
+                console.log('Duplikat-Sound wird abgespielt');
+            }).catch((err) => {
                 console.log('Duplikat-Sound Fehler:', err.message);
             });
         }
+    } else {
+        console.log('Duplikat-Audio nicht geladen! Pruefe ob sounds/duplikat.mp3 existiert.');
     }
 }
 
@@ -408,7 +414,7 @@ function initGame() {
 
     // First time bonus: 1 coin
     if (checkFirstTimeBonus()) {
-        coins += 1;
+        coins += 100;
         saveCoins(coins);
     }
 
@@ -1244,19 +1250,43 @@ function initGame() {
         if (audioUnlocked) return;
         audioUnlocked = true;
 
-        // Just create a silent audio context interaction - don't play the actual sounds
-        Object.values(rarityAudios).forEach(audio => {
+        // Sammle alle Audio-Objekte die entsperrt werden muessen
+        const allAudios = [
+            ...Object.values(rarityAudios),
+            duplicateAudio,
+            noCoinsAudio,
+            passwordAudio
+        ].filter(audio => audio !== null);
+
+        // Entsperre jedes Audio durch kurzes Abspielen (stumm geschaltet)
+        allAudios.forEach(audio => {
             if (audio) {
-                // Preload without playing
-                audio.load();
+                // Mute ist zuverlaessiger als volume=0
+                audio.muted = true;
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.muted = false;
+                    }).catch(() => {
+                        audio.muted = false;
+                    });
+                } else {
+                    audio.muted = false;
+                }
             }
         });
+
+        console.log('Alle Audio-Dateien entsperrt');
     }
 
     function handleInsert() {
+        // Immer Audio entsperren bei User-Interaktion
+        initAudio();
+        unlockAllAudio();
+
         if (coins > 0 && !isAnimating && allCards.length > 0) {
-            initAudio();
-            unlockAllAudio();
             coins--;
             saveCoins(coins);
             coinCountEl.textContent = coins;
