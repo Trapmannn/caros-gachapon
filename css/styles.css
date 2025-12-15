@@ -635,11 +635,15 @@ canvas {
 .gallery-grid {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     padding: 20px;
+    padding-bottom: max(40px, env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 15px;
     align-content: start;
+    overscroll-behavior: contain;
 }
 
 .gallery-card {

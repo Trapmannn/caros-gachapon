@@ -28,7 +28,7 @@ const MiniGame = {
     score: 0,
     gameOver: false,
     zombieSpawnTimer: 0,
-    zombieSpawnInterval: 120,
+    zombieSpawnInterval: 150,
     difficulty: 1,
 
     // Enemy type definitions

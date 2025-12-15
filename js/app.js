@@ -8,7 +8,7 @@ const pwError = document.getElementById('pw-error');
 // PASSWORT-SOUND PLATZHALTER
 // Lege deine Audio-Datei hier ab und aendere den Pfad:
 // ============================================
-const PASSWORD_SUCCESS_SOUND = 'sounds/IchLiebeDich.mp3';
+const PASSWORD_SUCCESS_SOUND = 'sounds/IchLiebeCaro.mp3';
 
 // Pre-load the audio
 let passwordAudio = null;
@@ -222,6 +222,16 @@ function initGame() {
             gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
             oscillator.start(now);
             oscillator.stop(now + 0.2);
+        }
+        else if (type === 'click') {
+            // Button click - soft pop
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, now);
+            oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
         }
     }
 
@@ -448,7 +458,7 @@ function initGame() {
 
     // ===== CAPSULE BALLS INSIDE =====
     const capsuleBalls = [];
-    const ballRadius = 0.14;
+    const ballRadius = 0.15;
 
     const domeBaseY = 2.65;
     const domeRadius = 0.95;
@@ -464,7 +474,7 @@ function initGame() {
 
     function generateBallPositions(count) {
         const positions = [];
-        const minDist = ballRadius * 2.4;
+        const minDist = ballRadius * 2;
 
         for (let i = 0; i < count; i++) {
             let attempts = 0;
@@ -879,6 +889,7 @@ function initGame() {
 
     // Card modal handlers
     flipCard.addEventListener('click', () => {
+        initAudio();
         flipCard.classList.toggle('flipped');
         playSound('flip');
     });
@@ -890,6 +901,8 @@ function initGame() {
     });
 
     function closeCardModalHandler() {
+        initAudio();
+        playSound('click');
         cardModal.classList.remove('active', 'emerging', 'revealed');
         flipCard.classList.remove('flipped');
         capsuleGroup.visible = false;
@@ -911,11 +924,15 @@ function initGame() {
     });
 
     function openGallery() {
+        initAudio();
+        playSound('click');
         renderGallery();
         galleryModal.classList.add('active');
     }
 
     function closeGallery() {
+        initAudio();
+        playSound('click');
         galleryModal.classList.remove('active');
     }
 
@@ -933,15 +950,21 @@ function initGame() {
     });
 
     function openCoinInfo() {
+        initAudio();
+        playSound('click');
         coinInfoModal.classList.add('active');
     }
 
     function closeCoinInfoModal() {
+        initAudio();
+        playSound('click');
         coinInfoModal.classList.remove('active');
     }
 
     // Minigame handler
     minigameBtn.addEventListener('click', () => {
+        initAudio();
+        playSound('click');
         minigameContainer.classList.add('active');
         MiniGame.init(minigameCanvas, (earnedCoins) => {
             // Callback when exiting minigame
@@ -984,6 +1007,8 @@ function initGame() {
     }
 
     function viewCard(card) {
+        initAudio();
+        playSound('click');
         viewCardImage.src = card.image;
         viewCardTitle.textContent = card.title;
         viewCardText.textContent = card.text;
@@ -993,17 +1018,22 @@ function initGame() {
     }
 
     viewFlipCard.addEventListener('click', () => {
+        initAudio();
         viewFlipCard.classList.toggle('flipped');
         playSound('flip');
     });
 
     closeViewModal.addEventListener('click', () => {
+        initAudio();
+        playSound('click');
         cardViewModal.classList.remove('active', 'emerging', 'revealed');
         viewFlipCard.classList.remove('flipped');
     });
 
     closeViewModal.addEventListener('touchend', (e) => {
         e.preventDefault();
+        initAudio();
+        playSound('click');
         cardViewModal.classList.remove('active', 'emerging', 'revealed');
         viewFlipCard.classList.remove('flipped');
     });
@@ -1291,7 +1321,10 @@ function initGame() {
     animate();
 
     document.addEventListener('touchmove', (e) => {
+        // Allow scrolling in gallery and other modals
         if (e.target.closest('.prize-modal')) return;
+        if (e.target.closest('.gallery-grid')) return;
+        if (e.target.closest('.gallery-modal')) return;
         e.preventDefault();
     }, { passive: false });
 }
