@@ -776,8 +776,10 @@ function initGame() {
     const coinInfoModal = document.getElementById('coin-info-modal');
     const closeCoinInfo = document.getElementById('close-coin-info');
 
-    // Minigame button
+    // Minigame button and container
     const minigameBtn = document.getElementById('minigame-btn');
+    const minigameContainer = document.getElementById('minigame-container');
+    const minigameCanvas = document.getElementById('minigame-canvas');
 
     // Insert coin handler
     insertBtn.addEventListener('click', handleInsert);
@@ -863,9 +865,17 @@ function initGame() {
         coinInfoModal.classList.remove('active');
     }
 
-    // Minigame handler (placeholder for now)
+    // Minigame handler
     minigameBtn.addEventListener('click', () => {
-        // TODO: Implement minigame
+        minigameContainer.classList.add('active');
+        MiniGame.init(minigameCanvas, (earnedCoins) => {
+            // Callback when exiting minigame
+            minigameContainer.classList.remove('active');
+            if (earnedCoins > 0) {
+                coins += earnedCoins;
+                coinCountEl.textContent = coins;
+            }
+        });
     });
 
     function renderGallery() {
