@@ -752,6 +752,196 @@ function initGame() {
     machineGroup.position.y = -0.5;
     scene.add(machineGroup);
 
+    // ===== CHRISTMAS DECORATIONS =====
+
+    // Christmas tree next to machine
+    const treeGroup = new THREE.Group();
+
+    // Tree trunk
+    const trunkGeo = new THREE.CylinderGeometry(0.08, 0.12, 0.4, 8);
+    const trunkMat = createMaterial(0x4a3728, 0.8, 0.1);
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = 0.2;
+    trunk.castShadow = true;
+    treeGroup.add(trunk);
+
+    // Tree layers (cone shapes)
+    const treeMat = createMaterial(0x1a472a, 0.7, 0.1);
+    const treeLayerData = [
+        { y: 0.6, radius: 0.5, height: 0.6 },
+        { y: 1.0, radius: 0.4, height: 0.5 },
+        { y: 1.35, radius: 0.3, height: 0.45 },
+        { y: 1.65, radius: 0.2, height: 0.4 }
+    ];
+
+    treeLayerData.forEach(layer => {
+        const coneGeo = new THREE.ConeGeometry(layer.radius, layer.height, 8);
+        const cone = new THREE.Mesh(coneGeo, treeMat);
+        cone.position.y = layer.y;
+        cone.castShadow = true;
+        treeGroup.add(cone);
+    });
+
+    // Star on top
+    const starMat = new THREE.MeshStandardMaterial({
+        color: 0xffd700,
+        emissive: 0xffd700,
+        emissiveIntensity: 0.8,
+        roughness: 0.2,
+        metalness: 0.8
+    });
+
+    // Simple star using octahedron
+    const starGeoTree = new THREE.OctahedronGeometry(0.1, 0);
+    const starMesh = new THREE.Mesh(starGeoTree, starMat);
+    starMesh.position.y = 1.95;
+    starMesh.scale.set(1, 1.5, 1);
+    treeGroup.add(starMesh);
+
+    // Tree ornaments (baubles on tree)
+    const treeBaubleColors = [0xff0000, 0xffd700, 0x0066cc, 0xff69b4, 0x00ff00];
+    const treeBaublePositions = [
+        { x: 0.25, y: 0.5, z: 0.2 },
+        { x: -0.2, y: 0.7, z: 0.25 },
+        { x: 0.15, y: 0.95, z: -0.2 },
+        { x: -0.18, y: 1.15, z: 0.15 },
+        { x: 0.12, y: 1.4, z: 0.1 },
+        { x: -0.1, y: 0.6, z: -0.25 },
+        { x: 0.22, y: 1.25, z: -0.1 }
+    ];
+
+    treeBaublePositions.forEach((pos, i) => {
+        const baubleGeo = new THREE.SphereGeometry(0.06, 12, 12);
+        const baubleMat = new THREE.MeshStandardMaterial({
+            color: treeBaubleColors[i % treeBaubleColors.length],
+            roughness: 0.2,
+            metalness: 0.6
+        });
+        const bauble = new THREE.Mesh(baubleGeo, baubleMat);
+        bauble.position.set(pos.x, pos.y, pos.z);
+        treeGroup.add(bauble);
+    });
+
+    treeGroup.position.set(-1.8, -0.5, 0.5);
+    scene.add(treeGroup);
+
+    // Christmas baubles on the gachapon machine
+    const machineBaublePositions = [
+        { x: -0.85, y: 2.0, z: 0.4 },
+        { x: 0.85, y: 2.0, z: 0.4 },
+        { x: -0.75, y: 1.0, z: 0.7 },
+        { x: 0.75, y: 1.0, z: 0.7 }
+    ];
+
+    machineBaublePositions.forEach((pos, i) => {
+        const baubleGeo = new THREE.SphereGeometry(0.08, 16, 16);
+        const baubleMat = new THREE.MeshStandardMaterial({
+            color: treeBaubleColors[i % treeBaubleColors.length],
+            roughness: 0.15,
+            metalness: 0.7
+        });
+        const bauble = new THREE.Mesh(baubleGeo, baubleMat);
+        bauble.position.set(pos.x, pos.y, pos.z);
+        bauble.castShadow = true;
+        machineGroup.add(bauble);
+
+        // Small hook/cap on bauble
+        const capGeo = new THREE.CylinderGeometry(0.02, 0.025, 0.03, 8);
+        const capMat = createMaterial(0xc0c0c0, 0.2, 0.8);
+        const cap = new THREE.Mesh(capGeo, capMat);
+        cap.position.set(pos.x, pos.y + 0.09, pos.z);
+        machineGroup.add(cap);
+    });
+
+    // Pine garland/branches on machine
+    const garlandMat = createMaterial(0x1a5c2a, 0.8, 0.1);
+
+    // Garland around the globe base
+    const garlandRingGeo = new THREE.TorusGeometry(1.0, 0.06, 8, 32);
+    const garlandRing = new THREE.Mesh(garlandRingGeo, garlandMat);
+    garlandRing.position.set(0, 2.65, 0);
+    garlandRing.rotation.x = Math.PI / 2;
+    machineGroup.add(garlandRing);
+
+    // Small pine branch details on garland
+    for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        const branchGeo = new THREE.ConeGeometry(0.05, 0.15, 4);
+        const branch = new THREE.Mesh(branchGeo, garlandMat);
+        branch.position.set(
+            Math.cos(angle) * 1.0,
+            2.65,
+            Math.sin(angle) * 1.0
+        );
+        branch.rotation.z = Math.PI / 2;
+        branch.rotation.y = -angle;
+        machineGroup.add(branch);
+    }
+
+    // Top garland on machine
+    const topGarlandGeo = new THREE.TorusGeometry(0.35, 0.04, 6, 16);
+    const topGarland = new THREE.Mesh(topGarlandGeo, garlandMat);
+    topGarland.position.set(0, 3.7, 0);
+    topGarland.rotation.x = Math.PI / 2;
+    machineGroup.add(topGarland);
+
+    // Snow on top of dome
+    const snowCapGeo = new THREE.SphereGeometry(0.98, 32, 16, 0, Math.PI * 2, 0, Math.PI / 6);
+    const snowMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.9,
+        metalness: 0.0
+    });
+    const snowCap = new THREE.Mesh(snowCapGeo, snowMat);
+    snowCap.position.set(0, 3.55, 0);
+    snowCap.scale.set(1, 0.3, 0.85);
+    machineGroup.add(snowCap);
+
+    // Small snow patches
+    const snowPatchPositions = [
+        { x: 0.3, y: 3.45, z: 0.2, scale: 0.15 },
+        { x: -0.25, y: 3.5, z: 0.3, scale: 0.12 },
+        { x: 0.1, y: 3.52, z: -0.25, scale: 0.1 },
+        { x: -0.4, y: 3.35, z: -0.1, scale: 0.13 }
+    ];
+
+    snowPatchPositions.forEach(patch => {
+        const patchGeo = new THREE.SphereGeometry(patch.scale, 8, 8);
+        const patchMesh = new THREE.Mesh(patchGeo, snowMat);
+        patchMesh.position.set(patch.x, patch.y, patch.z);
+        patchMesh.scale.y = 0.3;
+        machineGroup.add(patchMesh);
+    });
+
+    // ===== SNOWFALL PARTICLE SYSTEM =====
+    const snowflakes = [];
+    const snowflakeCount = 150;
+    const snowflakeGeo = new THREE.CircleGeometry(0.02, 6);
+    const snowflakeMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide
+    });
+
+    for (let i = 0; i < snowflakeCount; i++) {
+        const snowflake = new THREE.Mesh(snowflakeGeo, snowflakeMat.clone());
+        snowflake.position.set(
+            (Math.random() - 0.5) * 8,
+            Math.random() * 6 + 2,
+            (Math.random() - 0.5) * 6
+        );
+        snowflake.userData = {
+            speed: 0.01 + Math.random() * 0.02,
+            wobbleSpeed: 0.5 + Math.random() * 1,
+            wobbleAmount: 0.01 + Math.random() * 0.02,
+            rotSpeed: (Math.random() - 0.5) * 0.1,
+            initialX: snowflake.position.x
+        };
+        snowflakes.push(snowflake);
+        scene.add(snowflake);
+    }
+
     // ===== ANIMATED OBJECTS =====
     const coinGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.015, 32);
     const coinMat = new THREE.MeshStandardMaterial({
@@ -1170,6 +1360,24 @@ function initGame() {
 
         glowLight1.intensity = 0.4 + Math.sin(time * 2) * 0.15;
         greenLight.material.emissiveIntensity = 0.7 + Math.sin(time * 3) * 0.3;
+
+        // Animate snowfall
+        snowflakes.forEach(snowflake => {
+            snowflake.position.y -= snowflake.userData.speed;
+            snowflake.position.x = snowflake.userData.initialX +
+                Math.sin(time * snowflake.userData.wobbleSpeed) * snowflake.userData.wobbleAmount;
+            snowflake.rotation.z += snowflake.userData.rotSpeed;
+
+            // Reset snowflake when it falls below view
+            if (snowflake.position.y < -1) {
+                snowflake.position.y = 6 + Math.random() * 2;
+                snowflake.position.x = (Math.random() - 0.5) * 8;
+                snowflake.userData.initialX = snowflake.position.x;
+            }
+        });
+
+        // Animate tree star rotation
+        starMesh.rotation.y = time * 0.5;
 
         if (isShaking) {
             capsuleBalls.forEach((ball, i) => {

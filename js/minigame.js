@@ -325,9 +325,9 @@ const MiniGame = {
             const btnH = 60;
             return x > btnX - btnW/2 && x < btnX + btnW/2 && y > btnY - btnH/2 && y < btnY + btnH/2;
         }
-        // During gameplay, exit button is in top left
+        // During gameplay, exit button is in top left (with safe area offset)
         const btnX = 60;
-        const btnY = 40;
+        const btnY = 70; // 50 (safeTop) + 20 (half button height)
         const btnW = 100;
         const btnH = 40;
         return x > btnX - btnW/2 && x < btnX + btnW/2 && y > btnY - btnH/2 && y < btnY + btnH/2;
@@ -939,37 +939,35 @@ const MiniGame = {
     drawUI() {
         const ctx = this.ctx;
 
+        // Safe area offset for status bar
+        const safeTop = 50;
+
         // Exit button (always visible)
         ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
-        this.roundRect(ctx, 10, 20, 100, 40, 10);
+        this.roundRect(ctx, 10, safeTop, 100, 40, 10);
         ctx.fill();
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px Fredoka, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('Beenden', 60, 40);
+        ctx.fillText('Beenden', 60, safeTop + 20);
 
         // Highscore
         ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
         ctx.font = '16px Fredoka, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`Highscore: ${this.highscore}`, this.canvas.width - 20, 25);
+        ctx.fillText(`Highscore: ${this.highscore}`, this.canvas.width - 20, safeTop + 5);
 
         // Score
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 24px Fredoka, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`Score: ${this.score}`, this.canvas.width - 20, 50);
+        ctx.fillText(`Score: ${this.score}`, this.canvas.width - 20, safeTop + 30);
 
         // Coins earned
         ctx.fillStyle = '#ffd700';
         ctx.font = 'bold 18px Fredoka, sans-serif';
-        ctx.fillText(`Muenzen: ${this.coinsEarned}`, this.canvas.width - 20, 80);
-
-        // Difficulty indicator
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.font = '14px Fredoka, sans-serif';
-        ctx.fillText(`Welle: ${Math.floor(this.difficulty)}`, this.canvas.width - 20, 105);
+        ctx.fillText(`Münzen: ${this.coinsEarned}`, this.canvas.width - 20, safeTop + 60);
 
         // Game over screen
         if (this.gameOver) {

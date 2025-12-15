@@ -11,7 +11,6 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    touch-action: none;
 }
 
 body {
@@ -55,6 +54,9 @@ body::before {
     flex-direction: column;
     gap: 25px;
     padding: 20px;
+    touch-action: auto;
+    -webkit-user-select: auto;
+    user-select: auto;
 }
 
 #password-screen h2 {
@@ -88,6 +90,12 @@ body::before {
     max-width: 280px;
     font-family: 'Outfit', sans-serif;
     transition: border-color 0.3s ease;
+    /* PWA input fix */
+    touch-action: auto;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 #pw-input:focus {
@@ -134,6 +142,7 @@ body::before {
     top: 0;
     left: 0;
     z-index: 1;
+    touch-action: none;
 }
 
 canvas {
