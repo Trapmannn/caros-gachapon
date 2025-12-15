@@ -26,6 +26,7 @@ const MiniGame = {
     particles: [],
     coins: [],
     score: 0,
+    highscore: 0,
     gameOver: false,
     zombieSpawnTimer: 0,
     zombieSpawnInterval: 150,
@@ -189,7 +190,19 @@ const MiniGame = {
         this.resize();
         this.setupEvents();
         this.initAudio();
+        this.loadHighscore();
         this.start();
+    },
+
+    loadHighscore() {
+        this.highscore = parseInt(localStorage.getItem('minigame_highscore')) || 0;
+    },
+
+    saveHighscore() {
+        if (this.score > this.highscore) {
+            this.highscore = this.score;
+            localStorage.setItem('minigame_highscore', this.highscore.toString());
+        }
     },
 
     resize() {
@@ -508,6 +521,7 @@ const MiniGame = {
             // Check player collision (one-hit death)
             if (dist < this.player.radius + zombie.radius) {
                 this.gameOver = true;
+                this.saveHighscore();
                 this.screenShake.intensity = 20;
                 this.playSound('gameOver');
                 this.spawnDeathParticles(this.player.x, this.player.y, '#ffdbac');
@@ -584,12 +598,18 @@ const MiniGame = {
         let type = 'basic';
         const roll = Math.random();
 
-        if (this.difficulty >= 6) {
+        if (this.difficulty >= 8) {
+            // High difficulty: 50% basic, 30% runner, 20% tank
+            if (roll < 0.40) type = 'tank';
+            else if (roll < 0.50) type = 'runner';
+            else type = 'basic';
+        } 
+        else if (this.difficulty >= 6) {
             // High difficulty: 50% basic, 30% runner, 20% tank
             if (roll < 0.35) type = 'tank';
             else if (roll < 0.35) type = 'runner';
             else type = 'basic';
-        } 
+        }
         else if (this.difficulty >= 4) {
             // Medium difficulty: 60% basic, 40% runner
             if (roll < 0.1) type = 'tank';
@@ -597,9 +617,9 @@ const MiniGame = {
             else type = 'basic';
         }
         else if (this.difficulty >= 2) {
-        // Medium difficulty: 60% basic, 40% runner
-        if (roll < 0.4) type = 'runner';
-        else type = 'basic';
+            // Medium difficulty: 60% basic, 40% runner
+            if (roll < 0.4) type = 'runner';
+            else type = 'basic';
         }
         // Low difficulty: only basic zombies
 
@@ -929,21 +949,27 @@ const MiniGame = {
         ctx.textBaseline = 'middle';
         ctx.fillText('Beenden', 60, 40);
 
+        // Highscore
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+        ctx.font = '16px Fredoka, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`Highscore: ${this.highscore}`, this.canvas.width - 20, 25);
+
         // Score
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 24px Fredoka, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`Score: ${this.score}`, this.canvas.width - 20, 40);
+        ctx.fillText(`Score: ${this.score}`, this.canvas.width - 20, 50);
 
         // Coins earned
         ctx.fillStyle = '#ffd700';
         ctx.font = 'bold 18px Fredoka, sans-serif';
-        ctx.fillText(`Muenzen: ${this.coinsEarned}`, this.canvas.width - 20, 70);
+        ctx.fillText(`Muenzen: ${this.coinsEarned}`, this.canvas.width - 20, 80);
 
         // Difficulty indicator
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.font = '14px Fredoka, sans-serif';
-        ctx.fillText(`Welle: ${Math.floor(this.difficulty)}`, this.canvas.width - 20, 95);
+        ctx.fillText(`Welle: ${Math.floor(this.difficulty)}`, this.canvas.width - 20, 105);
 
         // Game over screen
         if (this.gameOver) {

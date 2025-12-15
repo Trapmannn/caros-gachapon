@@ -214,14 +214,46 @@ function initGame() {
             });
         }
         else if (type === 'flip') {
-            // Card flip - whoosh
-            oscillator.type = 'sawtooth';
-            oscillator.frequency.setValueAtTime(200, now);
-            oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.15);
-            gainNode.gain.setValueAtTime(0.1, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            // Card flip - smooth swoosh sound
+            // White noise filtered swoosh
+            const bufferSize = audioCtx.sampleRate * 0.3;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            // Generate swoosh noise
+            for (let i = 0; i < bufferSize; i++) {
+                const t = i / bufferSize;
+                // Envelope: quick attack, smooth decay
+                const envelope = Math.sin(t * Math.PI) * Math.exp(-t * 3);
+                data[i] = (Math.random() * 2 - 1) * envelope;
+            }
+
+            const noiseSource = audioCtx.createBufferSource();
+            noiseSource.buffer = buffer;
+
+            // Bandpass filter for swoosh character
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(800, now);
+            filter.frequency.exponentialRampToValueAtTime(2000, now + 0.15);
+            filter.frequency.exponentialRampToValueAtTime(400, now + 0.3);
+            filter.Q.value = 1;
+
+            const swooshGain = audioCtx.createGain();
+            swooshGain.gain.setValueAtTime(0.25, now);
+            swooshGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+            noiseSource.connect(filter);
+            filter.connect(swooshGain);
+            swooshGain.connect(audioCtx.destination);
+
+            noiseSource.start(now);
+            noiseSource.stop(now + 0.3);
+
+            // Don't use oscillator for this sound
             oscillator.start(now);
-            oscillator.stop(now + 0.2);
+            oscillator.stop(now + 0.001);
+            gainNode.gain.setValueAtTime(0, now);
         }
         else if (type === 'click') {
             // Button click - soft pop
@@ -280,6 +312,9 @@ function initGame() {
         coins += 1;
         saveCoins(coins);
     }
+
+    // Update coin display immediately on load
+    document.getElementById('coin-count').textContent = coins;
 
     // Game state
     let isAnimating = false;
