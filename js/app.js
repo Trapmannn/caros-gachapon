@@ -21,9 +21,13 @@ const RARITY_SOUNDS = {
     legendary: 'sounds/legendaer.mp3'
 };
 
+// Sound wenn man ein Duplikat zieht
+const DUPLICATE_SOUND = 'sounds/duplikat.mp3';
+
 // Pre-load the audio
 let passwordAudio = null;
 let noCoinsAudio = null;
+let duplicateAudio = null;
 let rarityAudios = {};
 
 try {
@@ -40,6 +44,14 @@ try {
     noCoinsAudio.load();
 } catch (e) {
     console.log('Keine-Muenzen-Audio konnte nicht geladen werden');
+}
+
+try {
+    duplicateAudio = new Audio(DUPLICATE_SOUND);
+    duplicateAudio.volume = 1;
+    duplicateAudio.load();
+} catch (e) {
+    console.log('Duplikat-Audio konnte nicht geladen werden');
 }
 
 // Pre-load rarity sounds
@@ -76,6 +88,18 @@ function playNoCoinsSound() {
         if (playPromise !== undefined) {
             playPromise.catch((err) => {
                 console.log('Keine-Muenzen-Sound Fehler:', err.message);
+            });
+        }
+    }
+}
+
+function playDuplicateSound() {
+    if (duplicateAudio) {
+        duplicateAudio.currentTime = 0;
+        const playPromise = duplicateAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+                console.log('Duplikat-Sound Fehler:', err.message);
             });
         }
     }
@@ -1482,8 +1506,12 @@ function initGame() {
         cardModal.classList.add('revealed');
         createSparkles();
 
-        // Play rarity sound after animation is complete
-        playRaritySound(currentCard.rarity);
+        // Play duplicate sound if it's a duplicate, otherwise play rarity sound
+        if (currentCardIsDuplicate) {
+            playDuplicateSound();
+        } else {
+            playRaritySound(currentCard.rarity);
+        }
 
         cardAnimationStarted = false;
     }
