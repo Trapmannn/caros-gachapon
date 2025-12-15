@@ -5,20 +5,57 @@ const pwSubmit = document.getElementById('pw-submit');
 const pwError = document.getElementById('pw-error');
 
 // ============================================
-// PASSWORT-SOUND PLATZHALTER
-// Lege deine Audio-Datei hier ab und aendere den Pfad:
+// SOUND PLATZHALTER
+// Lege deine Audio-Dateien hier ab und aendere die Pfade:
 // ============================================
 const PASSWORD_SUCCESS_SOUND = 'sounds/IchLiebeCaro.mp3';
 
+// Sound wenn man keine Muenzen hat und auf "Muenze einwerfen" klickt
+const NO_COINS_SOUND = 'sounds/broke.mp3';
+
+// Sounds fuer jede Raritaet (werden nach der Animation abgespielt)
+const RARITY_SOUNDS = {
+    common: 'sounds/gewoehnlich.mp3',
+    rare: 'sounds/selten.mp3',
+    epic: 'sounds/episch.mp3',
+    legendary: 'sounds/legendaer.mp3'
+};
+
 // Pre-load the audio
 let passwordAudio = null;
+let noCoinsAudio = null;
+let rarityAudios = {};
+
 try {
     passwordAudio = new Audio(PASSWORD_SUCCESS_SOUND);
     passwordAudio.volume = 1;
     passwordAudio.load();
 } catch (e) {
-    console.log('Audio konnte nicht geladen werden');
+    console.log('Passwort-Audio konnte nicht geladen werden');
 }
+
+try {
+    noCoinsAudio = new Audio(NO_COINS_SOUND);
+    noCoinsAudio.volume = 1;
+    noCoinsAudio.load();
+} catch (e) {
+    console.log('Keine-Muenzen-Audio konnte nicht geladen werden');
+}
+
+// Pre-load rarity sounds
+Object.keys(RARITY_SOUNDS).forEach(rarity => {
+    try {
+        const audio = new Audio(RARITY_SOUNDS[rarity]);
+        audio.volume = 1;
+        audio.preload = 'auto';
+        audio.load();
+        rarityAudios[rarity] = audio;
+        console.log(`${rarity}-Audio geladen: ${RARITY_SOUNDS[rarity]}`);
+    } catch (e) {
+        console.log(`${rarity}-Audio konnte nicht geladen werden:`, e);
+        rarityAudios[rarity] = null;
+    }
+});
 
 function playPasswordSound() {
     if (passwordAudio) {
@@ -29,6 +66,37 @@ function playPasswordSound() {
                 console.log('Passwort-Sound Fehler:', err.message);
             });
         }
+    }
+}
+
+function playNoCoinsSound() {
+    if (noCoinsAudio) {
+        noCoinsAudio.currentTime = 0;
+        const playPromise = noCoinsAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+                console.log('Keine-Muenzen-Sound Fehler:', err.message);
+            });
+        }
+    }
+}
+
+function playRaritySound(rarity) {
+    console.log('Versuche Rarity-Sound abzuspielen:', rarity);
+    const audio = rarityAudios[rarity];
+    if (audio) {
+        console.log('Audio gefunden fuer:', rarity);
+        audio.currentTime = 0;
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log(`${rarity}-Sound wird abgespielt`);
+            }).catch((err) => {
+                console.log(`${rarity}-Sound Fehler:`, err.message);
+            });
+        }
+    } else {
+        console.log('Kein Audio gefunden fuer:', rarity);
     }
 }
 
@@ -68,6 +136,19 @@ function initGame() {
 
     function getCollectedCards() {
         return allCards.filter(card => collectedCardIds.includes(card.id));
+    }
+
+    function getCollectedCardsSorted() {
+        // Sort by rarity: common first, then rare, epic, legendary
+        return getCollectedCards().sort((a, b) => {
+            const orderA = RARITY_CONFIG[a.rarity]?.order ?? 0;
+            const orderB = RARITY_CONFIG[b.rarity]?.order ?? 0;
+            return orderA - orderB;
+        });
+    }
+
+    function isCardCollected(cardId) {
+        return collectedCardIds.includes(cardId);
     }
 
     function collectCard(cardId) {
@@ -320,6 +401,7 @@ function initGame() {
     let isAnimating = false;
     let isShaking = false;
     let currentCard = null;
+    let currentCardIsDuplicate = false;
 
     // Three.js setup
     const container = document.getElementById('canvas-container');
@@ -822,7 +904,8 @@ function initGame() {
         treeGroup.add(bauble);
     });
 
-    treeGroup.position.set(-1.8, -0.5, 0.5);
+    treeGroup.position.set(-1.5, -0.5, -0.8);
+    treeGroup.scale.set(1.3, 1.3, 1.3);
     scene.add(treeGroup);
 
     // Christmas baubles on the gachapon machine
@@ -1050,9 +1133,39 @@ function initGame() {
     const coinTargetPos = new THREE.Vector3(-0.5, 1.1, 0.72);
 
     function drawRandomCard() {
-        const available = getAvailableCards();
-        if (available.length === 0) return null;
-        return available[Math.floor(Math.random() * available.length)];
+        // Group all cards by rarity
+        const cardsByRarity = {
+            common: allCards.filter(c => c.rarity === 'common'),
+            rare: allCards.filter(c => c.rarity === 'rare'),
+            epic: allCards.filter(c => c.rarity === 'epic'),
+            legendary: allCards.filter(c => c.rarity === 'legendary')
+        };
+
+        // Determine which rarity to draw based on probabilities
+        const roll = Math.random();
+        let selectedRarity;
+        let cumulative = 0;
+
+        for (const [rarity, config] of Object.entries(RARITY_CONFIG)) {
+            cumulative += config.probability;
+            if (roll < cumulative) {
+                selectedRarity = rarity;
+                break;
+            }
+        }
+
+        // Get cards of that rarity
+        let cardsOfRarity = cardsByRarity[selectedRarity] || [];
+
+        // If no cards of that rarity exist, fall back to any card
+        if (cardsOfRarity.length === 0) {
+            cardsOfRarity = allCards;
+        }
+
+        if (cardsOfRarity.length === 0) return null;
+
+        // Pick a random card from the selected rarity (can be duplicate)
+        return cardsOfRarity[Math.floor(Math.random() * cardsOfRarity.length)];
     }
 
     // DOM Elements
@@ -1064,6 +1177,8 @@ function initGame() {
     const cardText = document.getElementById('card-text');
     const flipCard = document.getElementById('flip-card');
     const closeCardModal = document.getElementById('close-card-modal');
+    const cardLabel = document.getElementById('card-label');
+    const cardRarity = document.getElementById('card-rarity');
 
     // Gallery elements
     const galleryBtn = document.getElementById('gallery-btn');
@@ -1097,18 +1212,39 @@ function initGame() {
         handleInsert();
     });
 
+    // Audio unlock flag - only unlock once
+    let audioUnlocked = false;
+
+    // Unlock all audio on first user interaction
+    function unlockAllAudio() {
+        if (audioUnlocked) return;
+        audioUnlocked = true;
+
+        // Just create a silent audio context interaction - don't play the actual sounds
+        Object.values(rarityAudios).forEach(audio => {
+            if (audio) {
+                // Preload without playing
+                audio.load();
+            }
+        });
+    }
+
     function handleInsert() {
-        const available = getAvailableCards();
-        if (coins > 0 && !isAnimating && available.length > 0) {
+        if (coins > 0 && !isAnimating && allCards.length > 0) {
             initAudio();
+            unlockAllAudio();
             coins--;
             saveCoins(coins);
             coinCountEl.textContent = coins;
             currentCard = drawRandomCard();
+            currentCardIsDuplicate = isCardCollected(currentCard.id);
             startAnimation();
             playSound('coin');
-        } else if (available.length === 0) {
-            alert('Du hast bereits alle Karten gesammelt! :)');
+        } else if (coins <= 0) {
+            // Play no coins sound
+            playNoCoinsSound();
+        } else if (allCards.length === 0) {
+            alert('Keine Karten verfuegbar!');
         }
     }
 
@@ -1203,7 +1339,7 @@ function initGame() {
     });
 
     function renderGallery() {
-        const collected = getCollectedCards();
+        const collected = getCollectedCardsSorted();
         galleryStats.textContent = `${collected.length} / ${allCards.length} Karten gesammelt`;
 
         galleryGrid.innerHTML = '';
@@ -1211,7 +1347,7 @@ function initGame() {
         if (collected.length === 0) {
             galleryGrid.innerHTML = `
                 <div class="gallery-empty">
-                    <div class="gallery-empty-icon">:slot_machine:</div>
+                    <div class="gallery-empty-icon">🎰</div>
                     <p>Du hast noch keine Karten gesammelt.</p>
                     <p>Wirf eine Muenze ein!</p>
                 </div>
@@ -1219,9 +1355,9 @@ function initGame() {
             return;
         }
 
-        collected.forEach((card, index) => {
+        collected.forEach((card) => {
             const cardEl = document.createElement('div');
-            cardEl.className = 'gallery-card';
+            cardEl.className = 'gallery-card rarity-' + card.rarity;
             cardEl.innerHTML = `
                 <img src="${card.image}" alt="${card.title}">
                 <span class="card-number">#${card.id}</span>
@@ -1238,6 +1374,11 @@ function initGame() {
         viewCardTitle.textContent = card.title;
         viewCardText.textContent = card.text;
         viewFlipCard.classList.remove('flipped');
+
+        // Set rarity class on view flip card
+        viewFlipCard.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary');
+        viewFlipCard.classList.add('rarity-' + card.rarity);
+
         cardViewModal.classList.remove('emerging');
         cardViewModal.classList.add('active', 'revealed');
     }
@@ -1308,6 +1449,25 @@ function initGame() {
         cardText.textContent = currentCard.text;
         flipCard.classList.remove('flipped');
 
+        // Set rarity class on flip card
+        flipCard.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary');
+        flipCard.classList.add('rarity-' + currentCard.rarity);
+
+        // Set label (new card or duplicate)
+        if (currentCardIsDuplicate) {
+            cardLabel.textContent = '★ DUPLIKAT ★';
+            cardLabel.classList.add('duplicate');
+        } else {
+            cardLabel.textContent = '★ NEUE KARTE! ★';
+            cardLabel.classList.remove('duplicate');
+        }
+
+        // Set rarity text and class
+        const rarityConfig = RARITY_CONFIG[currentCard.rarity];
+        cardRarity.textContent = rarityConfig ? rarityConfig.name : currentCard.rarity;
+        cardRarity.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary');
+        cardRarity.classList.add('rarity-' + currentCard.rarity);
+
         cardModal.classList.remove('revealed');
         cardModal.classList.add('active', 'emerging');
         playSound('reveal');
@@ -1321,6 +1481,9 @@ function initGame() {
         cardModal.classList.remove('emerging');
         cardModal.classList.add('revealed');
         createSparkles();
+
+        // Play rarity sound after animation is complete
+        playRaritySound(currentCard.rarity);
 
         cardAnimationStarted = false;
     }
