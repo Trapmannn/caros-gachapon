@@ -1,6 +1,11 @@
 /**
  * ZOMBIE SURVIVOR - Top-Down Shooter Minigame
  * Twin-stick touch controls for mobile
+ *
+ * GEGNERTYPEN:
+ * - Basic (gruen): 3 HP, langsam, keine Muenzen
+ * - Runner (lila): 2 HP, schnell, selten Muenzen (10%)
+ * - Tank (rot): 6 HP, langsam, gross, oft Muenzen (50%)
  */
 
 const MiniGame = {
@@ -10,6 +15,9 @@ const MiniGame = {
     animationFrame: null,
     coinsEarned: 0,
     onExit: null,
+
+    // Audio context for sound effects
+    audioCtx: null,
 
     // Game state
     player: null,
@@ -22,6 +30,37 @@ const MiniGame = {
     zombieSpawnTimer: 0,
     zombieSpawnInterval: 120,
     difficulty: 1,
+
+    // Enemy type definitions
+    enemyTypes: {
+        basic: {
+            health: 3,
+            speed: 1.9,
+            radius: 22,
+            color: '#4a7c59',
+            darkColor: '#2d4a35',
+            coinChance: 0,       // No coins!
+            scoreValue: 10
+        },
+        runner: {
+            health: 2,
+            speed: 3.5,
+            radius: 18,
+            color: '#8e44ad',
+            darkColor: '#5b2c6f',
+            coinChance: 0.05,    // 10% chance
+            scoreValue: 20
+        },
+        tank: {
+            health: 9,
+            speed: 0.7,
+            radius: 32,
+            color: '#c0392b',
+            darkColor: '#7b241c',
+            coinChance: 0.50,    // 50% chance
+            scoreValue: 50
+        }
+    },
 
     // Screen shake
     screenShake: { x: 0, y: 0, intensity: 0 },
@@ -36,12 +75,120 @@ const MiniGame = {
     fireTimer: 0,
     fireRate: 8,
 
+    // ============================================
+    // SOUND EFFECTS
+    // ============================================
+    initAudio() {
+        if (!this.audioCtx) {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+    },
+
+    playSound(type) {
+        if (!this.audioCtx) return;
+
+        const ctx = this.audioCtx;
+        const now = ctx.currentTime;
+
+        switch (type) {
+            case 'shoot': {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+                break;
+            }
+            case 'hit': {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+                break;
+            }
+            case 'kill': {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+                break;
+            }
+            case 'coin': {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1100, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+                break;
+            }
+            case 'gameOver': {
+                // Descending notes
+                for (let i = 0; i < 4; i++) {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(400 - i * 80, now + i * 0.15);
+                    gain.gain.setValueAtTime(0.15, now + i * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.15);
+                    osc.start(now + i * 0.15);
+                    osc.stop(now + i * 0.15 + 0.15);
+                }
+                break;
+            }
+            case 'tankHit': {
+                // Heavy thud for tank
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(80, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+                break;
+            }
+        }
+    },
+
     init(canvas, onExitCallback) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.onExit = onExitCallback;
         this.resize();
         this.setupEvents();
+        this.initAudio();
         this.start();
     },
 
@@ -68,6 +215,7 @@ const MiniGame = {
 
     handleTouchStart(e) {
         e.preventDefault();
+        this.initAudio(); // Ensure audio is ready
         const rect = this.canvas.getBoundingClientRect();
 
         for (let touch of e.changedTouches) {
@@ -156,6 +304,15 @@ const MiniGame = {
     },
 
     isInsideExitButton(x, y) {
+        // During game over, the exit button is in the center
+        if (this.gameOver) {
+            const btnX = this.canvas.width / 2;
+            const btnY = this.canvas.height / 2 + 150;
+            const btnW = 200;
+            const btnH = 60;
+            return x > btnX - btnW/2 && x < btnX + btnW/2 && y > btnY - btnH/2 && y < btnY + btnH/2;
+        }
+        // During gameplay, exit button is in top left
         const btnX = 60;
         const btnY = 40;
         const btnW = 100;
@@ -267,6 +424,7 @@ const MiniGame = {
             if (this.fireTimer >= this.fireRate) {
                 this.fireTimer = 0;
                 this.spawnBullet();
+                this.playSound('shoot');
             }
         }
 
@@ -274,11 +432,11 @@ const MiniGame = {
         this.zombieSpawnTimer++;
         if (this.zombieSpawnTimer >= this.zombieSpawnInterval) {
             this.zombieSpawnTimer = 0;
-            this.spawnZombie();
+            this.spawnEnemy();
 
-            // Increase difficulty
-            this.difficulty += 0.02;
-            this.zombieSpawnInterval = Math.max(40, 120 - this.difficulty * 10);
+            // Increase difficulty faster
+            this.difficulty += 0.08;
+            this.zombieSpawnInterval = Math.max(30, 120 - this.difficulty * 12);
         }
 
         // Update bullets
@@ -296,15 +454,26 @@ const MiniGame = {
 
                 if (dist < zombie.radius + bullet.radius) {
                     zombie.health--;
-                    this.spawnHitParticles(bullet.x, bullet.y, '#00ff00');
-                    this.screenShake.intensity = 5;
+
+                    // Different sounds for different enemies
+                    if (zombie.type === 'tank') {
+                        this.playSound('tankHit');
+                        this.spawnHitParticles(bullet.x, bullet.y, zombie.color);
+                    } else {
+                        this.playSound('hit');
+                        this.spawnHitParticles(bullet.x, bullet.y, '#00ff00');
+                    }
+
+                    this.screenShake.intensity = zombie.type === 'tank' ? 8 : 5;
 
                     if (zombie.health <= 0) {
-                        this.score += 10;
-                        this.spawnDeathParticles(zombie.x, zombie.y);
+                        const enemyType = this.enemyTypes[zombie.type];
+                        this.score += enemyType.scoreValue;
+                        this.playSound('kill');
+                        this.spawnDeathParticles(zombie.x, zombie.y, zombie.color);
 
-                        // Chance to drop coin
-                        if (Math.random() < 0.3) {
+                        // Coin drop based on enemy type
+                        if (Math.random() < enemyType.coinChance) {
                             this.coins.push({
                                 x: zombie.x,
                                 y: zombie.y,
@@ -340,7 +509,8 @@ const MiniGame = {
             if (dist < this.player.radius + zombie.radius) {
                 this.gameOver = true;
                 this.screenShake.intensity = 20;
-                this.spawnDeathParticles(this.player.x, this.player.y);
+                this.playSound('gameOver');
+                this.spawnDeathParticles(this.player.x, this.player.y, '#ffdbac');
             }
         });
 
@@ -356,6 +526,7 @@ const MiniGame = {
             if (dist < this.player.radius + coin.radius) {
                 this.score += 50;
                 this.coinsEarned++;
+                this.playSound('coin');
                 this.spawnHitParticles(coin.x, coin.y, '#ffd700');
                 return false;
             }
@@ -386,35 +557,64 @@ const MiniGame = {
         });
     },
 
-    spawnZombie() {
+    spawnEnemy() {
         let x, y;
         const side = Math.floor(Math.random() * 4);
 
         switch (side) {
             case 0: // top
                 x = Math.random() * this.canvas.width;
-                y = -30;
+                y = -40;
                 break;
             case 1: // right
-                x = this.canvas.width + 30;
+                x = this.canvas.width + 40;
                 y = Math.random() * this.canvas.height;
                 break;
             case 2: // bottom
                 x = Math.random() * this.canvas.width;
-                y = this.canvas.height + 30;
+                y = this.canvas.height + 40;
                 break;
             case 3: // left
-                x = -30;
+                x = -40;
                 y = Math.random() * this.canvas.height;
                 break;
         }
 
+        // Determine enemy type based on difficulty
+        let type = 'basic';
+        const roll = Math.random();
+
+        if (this.difficulty >= 6) {
+            // High difficulty: 50% basic, 30% runner, 20% tank
+            if (roll < 0.35) type = 'tank';
+            else if (roll < 0.35) type = 'runner';
+            else type = 'basic';
+        } 
+        else if (this.difficulty >= 4) {
+            // Medium difficulty: 60% basic, 40% runner
+            if (roll < 0.1) type = 'tank';
+            else if (roll < 0.5) type = 'runner';
+            else type = 'basic';
+        }
+        else if (this.difficulty >= 2) {
+        // Medium difficulty: 60% basic, 40% runner
+        if (roll < 0.4) type = 'runner';
+        else type = 'basic';
+        }
+        // Low difficulty: only basic zombies
+
+        const enemyDef = this.enemyTypes[type];
+
         this.zombies.push({
             x: x,
             y: y,
-            radius: 22,
-            speed: 1.5 + Math.random() * this.difficulty * 0.5,
-            health: 3
+            type: type,
+            radius: enemyDef.radius,
+            speed: enemyDef.speed + Math.random() * this.difficulty * 0.2,
+            health: enemyDef.health,
+            maxHealth: enemyDef.health,
+            color: enemyDef.color,
+            darkColor: enemyDef.darkColor
         });
     },
 
@@ -436,7 +636,7 @@ const MiniGame = {
         }
     },
 
-    spawnDeathParticles(x, y) {
+    spawnDeathParticles(x, y, baseColor) {
         for (let i = 0; i < 25; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 3 + Math.random() * 5;
@@ -446,7 +646,7 @@ const MiniGame = {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 radius: 4 + Math.random() * 8,
-                color: `hsl(${Math.random() * 60}, 100%, 50%)`,
+                color: baseColor || `hsl(${Math.random() * 60}, 100%, 50%)`,
                 life: 40 + Math.random() * 30,
                 maxLife: 70,
                 alpha: 1
@@ -522,82 +722,14 @@ const MiniGame = {
         });
         ctx.shadowBlur = 0;
 
-        // Draw zombies
+        // Draw zombies (different types)
         this.zombies.forEach(zombie => {
-            // Body
-            ctx.fillStyle = '#4a7c59';
-            ctx.beginPath();
-            ctx.arc(zombie.x, zombie.y, zombie.radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Face details
-            ctx.fillStyle = '#2d4a35';
-            ctx.beginPath();
-            ctx.arc(zombie.x - 6, zombie.y - 5, 4, 0, Math.PI * 2);
-            ctx.arc(zombie.x + 6, zombie.y - 5, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Mouth
-            ctx.strokeStyle = '#2d4a35';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(zombie.x, zombie.y + 5, 8, 0.2, Math.PI - 0.2);
-            ctx.stroke();
-
-            // Health bar
-            const healthPercent = zombie.health / 3;
-            const barWidth = 30;
-            ctx.fillStyle = '#333';
-            ctx.fillRect(zombie.x - barWidth/2, zombie.y - zombie.radius - 10, barWidth, 4);
-            ctx.fillStyle = healthPercent > 0.5 ? '#4caf50' : healthPercent > 0.25 ? '#ff9800' : '#f44336';
-            ctx.fillRect(zombie.x - barWidth/2, zombie.y - zombie.radius - 10, barWidth * healthPercent, 4);
+            this.drawEnemy(ctx, zombie);
         });
 
         // Draw player (girl with brown hair)
         if (!this.gameOver) {
-            // Body
-            ctx.fillStyle = '#ffdbac';
-            ctx.beginPath();
-            ctx.arc(this.player.x, this.player.y, this.player.radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Hair (brown)
-            ctx.fillStyle = '#8B4513';
-            ctx.beginPath();
-            ctx.arc(this.player.x, this.player.y - 5, this.player.radius - 2, Math.PI, 0, false);
-            ctx.fill();
-
-            // Hair strands
-            ctx.beginPath();
-            ctx.arc(this.player.x - 12, this.player.y + 5, 8, 0, Math.PI * 2);
-            ctx.arc(this.player.x + 12, this.player.y + 5, 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Eyes
-            ctx.fillStyle = '#1a1a2e';
-            ctx.beginPath();
-            ctx.arc(this.player.x - 7, this.player.y - 2, 3, 0, Math.PI * 2);
-            ctx.arc(this.player.x + 7, this.player.y - 2, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Blush
-            ctx.fillStyle = 'rgba(255, 150, 150, 0.4)';
-            ctx.beginPath();
-            ctx.ellipse(this.player.x - 10, this.player.y + 5, 5, 3, 0, 0, Math.PI * 2);
-            ctx.ellipse(this.player.x + 10, this.player.y + 5, 5, 3, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Direction indicator (gun)
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = 6;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(this.player.x, this.player.y);
-            ctx.lineTo(
-                this.player.x + Math.cos(this.player.angle) * (this.player.radius + 15),
-                this.player.y + Math.sin(this.player.angle) * (this.player.radius + 15)
-            );
-            ctx.stroke();
+            this.drawPlayer(ctx);
         }
 
         // Draw joysticks
@@ -608,6 +740,148 @@ const MiniGame = {
 
         // Draw UI (not affected by screen shake)
         this.drawUI();
+    },
+
+    drawEnemy(ctx, zombie) {
+        const type = zombie.type;
+
+        // Body
+        ctx.fillStyle = zombie.color;
+        ctx.beginPath();
+        ctx.arc(zombie.x, zombie.y, zombie.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (type === 'basic') {
+            // Basic zombie - simple face
+            ctx.fillStyle = zombie.darkColor;
+            ctx.beginPath();
+            ctx.arc(zombie.x - 6, zombie.y - 5, 4, 0, Math.PI * 2);
+            ctx.arc(zombie.x + 6, zombie.y - 5, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth
+            ctx.strokeStyle = zombie.darkColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(zombie.x, zombie.y + 5, 8, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+        } else if (type === 'runner') {
+            // Runner - angular, aggressive look
+            ctx.fillStyle = zombie.darkColor;
+
+            // Slanted eyes
+            ctx.beginPath();
+            ctx.ellipse(zombie.x - 5, zombie.y - 4, 5, 3, -0.3, 0, Math.PI * 2);
+            ctx.ellipse(zombie.x + 5, zombie.y - 4, 5, 3, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sharp teeth
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(zombie.x - 6, zombie.y + 4);
+            ctx.lineTo(zombie.x - 3, zombie.y + 8);
+            ctx.lineTo(zombie.x, zombie.y + 4);
+            ctx.lineTo(zombie.x + 3, zombie.y + 8);
+            ctx.lineTo(zombie.x + 6, zombie.y + 4);
+            ctx.stroke();
+
+            // Speed lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(zombie.x - zombie.radius - 5, zombie.y - 5);
+            ctx.lineTo(zombie.x - zombie.radius - 15, zombie.y - 5);
+            ctx.moveTo(zombie.x - zombie.radius - 5, zombie.y + 5);
+            ctx.lineTo(zombie.x - zombie.radius - 12, zombie.y + 5);
+            ctx.stroke();
+        } else if (type === 'tank') {
+            // Tank - big, armored look
+            ctx.fillStyle = zombie.darkColor;
+
+            // Heavy brow
+            ctx.fillRect(zombie.x - 15, zombie.y - 12, 30, 8);
+
+            // Small angry eyes
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(zombie.x - 8, zombie.y - 5, 4, 0, Math.PI * 2);
+            ctx.arc(zombie.x + 8, zombie.y - 5, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(zombie.x - 8, zombie.y - 5, 2, 0, Math.PI * 2);
+            ctx.arc(zombie.x + 8, zombie.y - 5, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Armor plates
+            ctx.strokeStyle = zombie.darkColor;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(zombie.x, zombie.y, zombie.radius - 5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Mouth/jaw
+            ctx.fillStyle = zombie.darkColor;
+            ctx.beginPath();
+            ctx.rect(zombie.x - 12, zombie.y + 8, 24, 10);
+            ctx.fill();
+        }
+
+        // Health bar
+        const healthPercent = zombie.health / zombie.maxHealth;
+        const barWidth = zombie.radius * 1.4;
+        ctx.fillStyle = '#333';
+        ctx.fillRect(zombie.x - barWidth/2, zombie.y - zombie.radius - 12, barWidth, 5);
+        ctx.fillStyle = healthPercent > 0.5 ? '#4caf50' : healthPercent > 0.25 ? '#ff9800' : '#f44336';
+        ctx.fillRect(zombie.x - barWidth/2, zombie.y - zombie.radius - 12, barWidth * healthPercent, 5);
+    },
+
+    drawPlayer(ctx) {
+        // Body
+        ctx.fillStyle = '#ffdbac';
+        ctx.beginPath();
+        ctx.arc(this.player.x, this.player.y, this.player.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hair (brown)
+        ctx.fillStyle = '#8B4513';
+        ctx.beginPath();
+        ctx.arc(this.player.x, this.player.y - 5, this.player.radius - 2, Math.PI, 0, false);
+        ctx.fill();
+
+        // Hair strands
+        ctx.beginPath();
+        ctx.arc(this.player.x - 12, this.player.y + 5, 8, 0, Math.PI * 2);
+        ctx.arc(this.player.x + 12, this.player.y + 5, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#1a1a2e';
+        ctx.beginPath();
+        ctx.arc(this.player.x - 7, this.player.y - 2, 3, 0, Math.PI * 2);
+        ctx.arc(this.player.x + 7, this.player.y - 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Blush
+        ctx.fillStyle = 'rgba(255, 150, 150, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(this.player.x - 10, this.player.y + 5, 5, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(this.player.x + 10, this.player.y + 5, 5, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Direction indicator (gun)
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.player.x, this.player.y);
+        ctx.lineTo(
+            this.player.x + Math.cos(this.player.angle) * (this.player.radius + 15),
+            this.player.y + Math.sin(this.player.angle) * (this.player.radius + 15)
+        );
+        ctx.stroke();
     },
 
     drawJoystick(joystick, baseColor, stickColor) {
@@ -666,6 +940,11 @@ const MiniGame = {
         ctx.font = 'bold 18px Fredoka, sans-serif';
         ctx.fillText(`Muenzen: ${this.coinsEarned}`, this.canvas.width - 20, 70);
 
+        // Difficulty indicator
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.font = '14px Fredoka, sans-serif';
+        ctx.fillText(`Welle: ${Math.floor(this.difficulty)}`, this.canvas.width - 20, 95);
+
         // Game over screen
         if (this.gameOver) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -705,7 +984,8 @@ const MiniGame = {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.font = '18px Fredoka, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('Links: Bewegen | Rechts: Zielen & Schiessen', this.canvas.width / 2, this.canvas.height - 50);
+            ctx.fillText('Links: Bewegen | Rechts: Zielen & Schiessen', this.canvas.width / 2, this.canvas.height - 80);
+            ctx.fillText('Toete Gegner fuer Muenzen! (Lila & Rot droppen Muenzen)', this.canvas.width / 2, this.canvas.height - 50);
         }
     },
 
@@ -721,23 +1001,5 @@ const MiniGame = {
         ctx.lineTo(x, y + radius);
         ctx.quadraticCurveTo(x, y, x + radius, y);
         ctx.closePath();
-    },
-
-    // Override exit button check for game over screen
-    isInsideExitButton(x, y) {
-        // During game over, the exit button is in the center
-        if (this.gameOver) {
-            const btnX = this.canvas.width / 2;
-            const btnY = this.canvas.height / 2 + 150;
-            const btnW = 200;
-            const btnH = 60;
-            return x > btnX - btnW/2 && x < btnX + btnW/2 && y > btnY - btnH/2 && y < btnY + btnH/2;
-        }
-        // During gameplay, exit button is in top left
-        const btnX = 60;
-        const btnY = 40;
-        const btnW = 100;
-        const btnH = 40;
-        return x > btnX - btnW/2 && x < btnX + btnW/2 && y > btnY - btnH/2 && y < btnY + btnH/2;
     }
 };

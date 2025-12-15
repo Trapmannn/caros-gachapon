@@ -4,8 +4,37 @@ const pwInput = document.getElementById('pw-input');
 const pwSubmit = document.getElementById('pw-submit');
 const pwError = document.getElementById('pw-error');
 
+// ============================================
+// PASSWORT-SOUND PLATZHALTER
+// Lege deine Audio-Datei hier ab und aendere den Pfad:
+// ============================================
+const PASSWORD_SUCCESS_SOUND = 'sounds/IchLiebeDich.mp3';
+
+// Pre-load the audio
+let passwordAudio = null;
+try {
+    passwordAudio = new Audio(PASSWORD_SUCCESS_SOUND);
+    passwordAudio.volume = 1;
+    passwordAudio.load();
+} catch (e) {
+    console.log('Audio konnte nicht geladen werden');
+}
+
+function playPasswordSound() {
+    if (passwordAudio) {
+        passwordAudio.currentTime = 0;
+        const playPromise = passwordAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+                console.log('Passwort-Sound Fehler:', err.message);
+            });
+        }
+    }
+}
+
 function checkPassword() {
     if (pwInput.value === 'lucahdl') {
+        playPasswordSound();
         passwordScreen.classList.add('hidden');
         initGame();
     } else {
@@ -196,8 +225,53 @@ function initGame() {
         }
     }
 
+    // ===== COIN SYSTEM =====
+    const COINS_STORAGE_KEY = 'caros_gachapon_coins';
+    const FIRST_VISIT_KEY = 'caros_gachapon_first_visit';
+    const LAST_DAILY_KEY = 'caros_gachapon_last_daily';
+
+    function loadCoins() {
+        return parseInt(localStorage.getItem(COINS_STORAGE_KEY)) || 0;
+    }
+
+    function saveCoins(amount) {
+        localStorage.setItem(COINS_STORAGE_KEY, amount.toString());
+    }
+
+    function checkFirstTimeBonus() {
+        if (!localStorage.getItem(FIRST_VISIT_KEY)) {
+            localStorage.setItem(FIRST_VISIT_KEY, 'true');
+            return true;
+        }
+        return false;
+    }
+
+    function checkDailyBonus() {
+        const today = new Date().toDateString();
+        const lastDaily = localStorage.getItem(LAST_DAILY_KEY);
+        if (lastDaily !== today) {
+            localStorage.setItem(LAST_DAILY_KEY, today);
+            return true;
+        }
+        return false;
+    }
+
+    // Initialize coins with bonuses
+    let coins = loadCoins();
+
+    // First time bonus: 1 coin
+    if (checkFirstTimeBonus()) {
+        coins += 1;
+        saveCoins(coins);
+    }
+
+    // Daily bonus: 1 coin per day
+    if (checkDailyBonus()) {
+        coins += 1;
+        saveCoins(coins);
+    }
+
     // Game state
-    let coins = 10;
     let isAnimating = false;
     let isShaking = false;
     let currentCard = null;
@@ -221,7 +295,7 @@ function initGame() {
     container.appendChild(renderer.domElement);
 
     const isMobile = window.innerWidth < 768;
-    camera.position.set(0, 2.2, isMobile ? 9 : 8);
+    camera.position.set(0, 2.2, isMobile ? 7 : 6);
     camera.lookAt(0, 1.5, 0);
 
     // Lighting
@@ -793,6 +867,7 @@ function initGame() {
         if (coins > 0 && !isAnimating && available.length > 0) {
             initAudio();
             coins--;
+            saveCoins(coins);
             coinCountEl.textContent = coins;
             currentCard = drawRandomCard();
             startAnimation();
@@ -873,6 +948,7 @@ function initGame() {
             minigameContainer.classList.remove('active');
             if (earnedCoins > 0) {
                 coins += earnedCoins;
+                saveCoins(coins);
                 coinCountEl.textContent = coins;
             }
         });
@@ -1192,10 +1268,10 @@ function initGame() {
         renderer.setSize(width, height);
 
         if (width < 768) {
-            camera.position.z = 9.5;
+            camera.position.z = 7;
             camera.fov = 55;
         } else {
-            camera.position.z = 8;
+            camera.position.z = 6;
             camera.fov = 50;
         }
         camera.updateProjectionMatrix();
@@ -1213,13 +1289,6 @@ function initGame() {
         setTimeout(handleResize, 150);
     });
     animate();
-
-    setInterval(() => {
-        if (coins < 20) {
-            coins++;
-            coinCountEl.textContent = coins;
-        }
-    }, 30000);
 
     document.addEventListener('touchmove', (e) => {
         if (e.target.closest('.prize-modal')) return;
