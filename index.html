@@ -136,6 +136,37 @@
         </div>
     </div>
 
+    <!-- Minigame Selection Modal -->
+    <div class="minigame-selection" id="minigame-selection">
+        <div class="minigame-selection-header">
+            <h2>🎮 Minispiele</h2>
+            <button class="minigame-selection-close" id="minigame-selection-close">Zurück</button>
+        </div>
+        <div class="minigame-selection-content">
+            <div class="minigame-option" id="game-zombies" data-game="zombies">
+                <div class="minigame-preview">
+                    <img src="images/preview-zombies.jpg" alt="Caro vs Zombies" onerror="this.style.display='none'">
+                    <div class="minigame-preview-placeholder">🧟</div>
+                </div>
+                <div class="minigame-info">
+                    <h3>Caro vs Zombies</h3>
+                    <p>Verteidige dich gegen die Zombie-Horde!</p>
+                </div>
+            </div>
+            <div class="minigame-option disabled" id="game-crush" data-game="crush">
+                <div class="minigame-preview">
+                    <img src="images/preview-crush.jpg" alt="Caro Crush Saga" onerror="this.style.display='none'">
+                    <div class="minigame-preview-placeholder">💎</div>
+                </div>
+                <div class="minigame-info">
+                    <h3>Caro Crush Saga</h3>
+                    <p>Match-3 Puzzle Spaß!</p>
+                </div>
+                <div class="coming-soon-badge">Coming Soon</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Minigame Container -->
     <div class="minigame-container" id="minigame-container">
         <canvas id="minigame-canvas"></canvas>

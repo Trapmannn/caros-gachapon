@@ -205,7 +205,7 @@ const allCards = [
     },
     {
         id: 102,
-        image: 'images/voucher-wish.jpg',
+        image: 'images/wish.png',
         title: 'Wunsch-Gutschein',
         text: 'Ein Wunsch frei! (Im Rahmen des Möglichen natürlich...)',
         rarity: 'voucher',

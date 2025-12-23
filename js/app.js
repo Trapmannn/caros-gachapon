@@ -1276,6 +1276,11 @@ function initGame() {
     const minigameContainer = document.getElementById('minigame-container');
     const minigameCanvas = document.getElementById('minigame-canvas');
 
+    // Minigame selection elements
+    const minigameSelection = document.getElementById('minigame-selection');
+    const minigameSelectionClose = document.getElementById('minigame-selection-close');
+    const gameZombiesOption = document.getElementById('game-zombies');
+
     // Insert coin handler
     insertBtn.addEventListener('click', handleInsert);
     insertBtn.addEventListener('touchend', (e) => {
@@ -1436,10 +1441,25 @@ function initGame() {
         coinInfoModal.classList.remove('active');
     }
 
-    // Minigame handler
+    // Minigame selection handler - show selection screen
     minigameBtn.addEventListener('click', () => {
         initAudio();
         playSound('click');
+        minigameSelection.classList.add('active');
+    });
+
+    // Close minigame selection
+    minigameSelectionClose.addEventListener('click', () => {
+        initAudio();
+        playSound('click');
+        minigameSelection.classList.remove('active');
+    });
+
+    // Start Caro vs Zombies game
+    gameZombiesOption.addEventListener('click', () => {
+        initAudio();
+        playSound('click');
+        minigameSelection.classList.remove('active');
         minigameContainer.classList.add('active');
         MiniGame.init(minigameCanvas, (earnedCoins) => {
             // Callback when exiting minigame
