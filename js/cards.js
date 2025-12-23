@@ -40,26 +40,33 @@ const RARITY_CONFIG = {
     common: {
         name: 'Gewöhnlich',
         color: '#4ade80',
-        probability: 0.50,
+        probability: 0,
         order: 0
     },
     rare: {
         name: 'Selten',
         color: '#3b82f6',
-        probability: 0.30,
+        probability: 0,
         order: 1
     },
     epic: {
         name: 'Episch',
         color: '#a855f7',
-        probability: 0.15,
+        probability: 0,
         order: 2
     },
     legendary: {
         name: 'Legendär',
         color: '#ffd700',
-        probability: 0.05,
+        probability: 0,
         order: 3
+    },
+    voucher: {
+        name: 'Gutschein',
+        color: '#ff00ff',
+        probability: 1.0,
+        order: 99,
+        isVoucher: true
     }
 };
 
@@ -175,6 +182,34 @@ const allCards = [
         title: 'Rarrr',
         text: 'Meine Löwin, meine Bärin, mein Einhorn. Du bist alles für mich auch wenn du mich manchmal anfauchst.',
         rarity: 'common'
+    },
+
+    // =============================================
+    // GUTSCHEIN-KARTEN (Verbrauchskarten)
+    // =============================================
+    {
+        id: 100,
+        image: 'images/voucher-massage.jpg',
+        title: 'Massage-Gutschein',
+        text: 'Ein entspannender Massage-Gutschein, einlösbar bei deinem Lieblingsmenschen!',
+        rarity: 'voucher',
+        voucherType: 'massage'
+    },
+    {
+        id: 101,
+        image: 'images/voucher-date.jpg',
+        title: 'Date-Night Gutschein',
+        text: 'Ein romantischer Abend nach Wahl - Restaurant, Kino oder was auch immer du willst!',
+        rarity: 'voucher',
+        voucherType: 'date'
+    },
+    {
+        id: 102,
+        image: 'images/voucher-wish.jpg',
+        title: 'Wunsch-Gutschein',
+        text: 'Ein Wunsch frei! (Im Rahmen des Möglichen natürlich...)',
+        rarity: 'voucher',
+        voucherType: 'wish'
     }
 
     // =============================================

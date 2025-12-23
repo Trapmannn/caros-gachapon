@@ -152,38 +152,67 @@ function initGame() {
     // ===== CARD COLLECTION SYSTEM =====
     // Cards are defined in js/cards.js
 
-    // Load collected cards from localStorage
+    // Load collected cards from localStorage (with migration from old format)
     const STORAGE_KEY = 'caros_gachapon_collection';
-    let collectedCardIds = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const STORAGE_KEY_V2 = 'caros_gachapon_collection_v2';
+
+    // New format: { cardId: { collectedAt: timestamp } }
+    let collectedCardsData = {};
+
+    // Migration from old format (array of IDs) to new format (object with timestamps)
+    const oldData = localStorage.getItem(STORAGE_KEY);
+    const newData = localStorage.getItem(STORAGE_KEY_V2);
+
+    if (newData) {
+        collectedCardsData = JSON.parse(newData);
+    } else if (oldData) {
+        // Migrate old data
+        const oldIds = JSON.parse(oldData);
+        oldIds.forEach((id, index) => {
+            // Assign timestamps in order they were collected (oldest first)
+            collectedCardsData[id] = { collectedAt: Date.now() - (oldIds.length - index) * 1000 };
+        });
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(collectedCardsData));
+    }
+
+    // Helper to get array of collected card IDs (for backwards compatibility)
+    function getCollectedCardIds() {
+        return Object.keys(collectedCardsData).map(id => parseInt(id));
+    }
 
     function saveCollection() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(collectedCardIds));
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(collectedCardsData));
     }
 
     function getAvailableCards() {
-        return allCards.filter(card => !collectedCardIds.includes(card.id));
+        const ids = getCollectedCardIds();
+        return allCards.filter(card => !ids.includes(card.id));
     }
 
     function getCollectedCards() {
-        return allCards.filter(card => collectedCardIds.includes(card.id));
-    }
-
-    function getCollectedCardsSorted() {
-        // Sort by rarity: common first, then rare, epic, legendary
-        return getCollectedCards().sort((a, b) => {
-            const orderA = RARITY_CONFIG[a.rarity]?.order ?? 0;
-            const orderB = RARITY_CONFIG[b.rarity]?.order ?? 0;
-            return orderA - orderB;
-        });
+        const ids = getCollectedCardIds();
+        return allCards.filter(card => ids.includes(card.id));
     }
 
     function isCardCollected(cardId) {
-        return collectedCardIds.includes(cardId);
+        return collectedCardsData.hasOwnProperty(cardId);
+    }
+
+    function getCardCollectedAt(cardId) {
+        return collectedCardsData[cardId]?.collectedAt || 0;
     }
 
     function collectCard(cardId) {
-        if (!collectedCardIds.includes(cardId)) {
-            collectedCardIds.push(cardId);
+        if (!collectedCardsData.hasOwnProperty(cardId)) {
+            collectedCardsData[cardId] = { collectedAt: Date.now() };
+            saveCollection();
+            updateCollectionCount();
+        }
+    }
+
+    function removeCard(cardId) {
+        if (collectedCardsData.hasOwnProperty(cardId)) {
+            delete collectedCardsData[cardId];
             saveCollection();
             updateCollectionCount();
         }
@@ -191,11 +220,18 @@ function initGame() {
 
     function updateCollectionCount() {
         const countEl = document.getElementById('collection-count');
-        countEl.textContent = collectedCardIds.length;
+        // Count only non-voucher cards
+        const nonVoucherCount = getCollectedCards().filter(c => c.rarity !== 'voucher').length;
+        const totalNonVoucher = allCards.filter(c => c.rarity !== 'voucher').length;
+        countEl.textContent = nonVoucherCount;
     }
 
     // Initialize collection count
     updateCollectionCount();
+
+    // ===== SORT/FILTER STATE =====
+    let currentSort = 'default'; // 'default', 'rarity', 'number', 'date'
+    let sortAscending = true;
 
     // ===== SOUND EFFECTS =====
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1215,7 +1251,10 @@ function initGame() {
     const galleryModal = document.getElementById('gallery-modal');
     const galleryClose = document.getElementById('gallery-close');
     const galleryGrid = document.getElementById('gallery-grid');
-    const galleryStats = document.getElementById('gallery-stats');
+    const galleryFilters = document.getElementById('gallery-filters');
+    const filterToggleBtn = document.getElementById('filter-toggle-btn');
+    const voucherSection = document.getElementById('voucher-section');
+    const voucherGrid = document.getElementById('voucher-grid');
 
     // Card view modal elements
     const cardViewModal = document.getElementById('card-view-modal');
@@ -1224,6 +1263,8 @@ function initGame() {
     const viewCardTitle = document.getElementById('view-card-title');
     const viewCardText = document.getElementById('view-card-text');
     const closeViewModal = document.getElementById('close-view-modal');
+    const redeemVoucherBtn = document.getElementById('redeem-voucher-btn');
+    let currentViewingCard = null;
 
     // Coin info modal elements
     const coinBtn = document.getElementById('coin-btn');
@@ -1341,6 +1382,17 @@ function initGame() {
     function openGallery() {
         initAudio();
         playSound('click');
+
+        // Reset filters to default and hide filter bar
+        currentSort = 'default';
+        sortAscending = true;
+        galleryFilters.classList.add('hidden');
+        filterToggleBtn.classList.remove('active');
+        galleryFilters.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.remove('active', 'desc');
+        });
+        galleryFilters.querySelector('[data-sort="default"]').classList.add('active');
+
         renderGallery();
         galleryModal.classList.add('active');
     }
@@ -1350,6 +1402,14 @@ function initGame() {
         playSound('click');
         galleryModal.classList.remove('active');
     }
+
+    // Filter toggle button handler
+    filterToggleBtn.addEventListener('click', () => {
+        initAudio();
+        playSound('click');
+        galleryFilters.classList.toggle('hidden');
+        filterToggleBtn.classList.toggle('active');
+    });
 
     // Coin info handlers
     coinBtn.addEventListener('click', openCoinInfo);
@@ -1393,24 +1453,53 @@ function initGame() {
     });
 
     function renderGallery() {
-        const collectedCount = collectedCardIds.length;
-        galleryStats.textContent = `${collectedCount} / ${allCards.length} Karten gesammelt`;
+        // Separate regular cards and vouchers
+        const regularCards = allCards.filter(c => c.rarity !== 'voucher');
+        const voucherCards = allCards.filter(c => c.rarity === 'voucher');
 
         galleryGrid.innerHTML = '';
+        voucherGrid.innerHTML = '';
 
-        // Sort all cards by rarity order
-        const sortedCards = [...allCards].sort((a, b) => {
-            const orderA = RARITY_CONFIG[a.rarity]?.order ?? 0;
-            const orderB = RARITY_CONFIG[b.rarity]?.order ?? 0;
-            return orderA - orderB;
-        });
+        // Sort regular cards based on current sort setting
+        let sortedCards = [...regularCards];
 
+        if (currentSort === 'default') {
+            // Default: sort by rarity order
+            sortedCards.sort((a, b) => {
+                const orderA = RARITY_CONFIG[a.rarity]?.order ?? 0;
+                const orderB = RARITY_CONFIG[b.rarity]?.order ?? 0;
+                return orderA - orderB;
+            });
+        } else if (currentSort === 'rarity') {
+            sortedCards = regularCards.filter(c => isCardCollected(c.id));
+            sortedCards.sort((a, b) => {
+                const orderA = RARITY_CONFIG[a.rarity]?.order ?? 0;
+                const orderB = RARITY_CONFIG[b.rarity]?.order ?? 0;
+                return sortAscending ? orderA - orderB : orderB - orderA;
+            });
+        } else if (currentSort === 'number') {
+            sortedCards = regularCards.filter(c => isCardCollected(c.id));
+            sortedCards.sort((a, b) => sortAscending ? a.id - b.id : b.id - a.id);
+        } else if (currentSort === 'date') {
+            sortedCards = regularCards.filter(c => isCardCollected(c.id));
+            sortedCards.sort((a, b) => {
+                const dateA = getCardCollectedAt(a.id);
+                const dateB = getCardCollectedAt(b.id);
+                return sortAscending ? dateA - dateB : dateB - dateA;
+            });
+        }
+
+        // Render regular cards
         sortedCards.forEach((card) => {
             const cardEl = document.createElement('div');
-            const isCollected = isCardCollected(card.id);
+            const collected = isCardCollected(card.id);
 
-            if (isCollected) {
-                // Collected card - show image
+            // In filter mode (not default), only show collected cards
+            if (currentSort !== 'default' && !collected) {
+                return;
+            }
+
+            if (collected) {
                 cardEl.className = 'gallery-card rarity-' + card.rarity;
                 cardEl.innerHTML = `
                     <img src="${card.image}" alt="${card.title}">
@@ -1418,7 +1507,7 @@ function initGame() {
                 `;
                 cardEl.addEventListener('click', () => viewCard(card));
             } else {
-                // Not collected - show placeholder
+                // Placeholder (only in default mode)
                 cardEl.className = 'gallery-card placeholder';
                 cardEl.innerHTML = `
                     <span class="card-number">#${card.id}</span>
@@ -1427,19 +1516,76 @@ function initGame() {
 
             galleryGrid.appendChild(cardEl);
         });
+
+        // Render voucher section
+        const collectedVouchers = voucherCards.filter(c => isCardCollected(c.id));
+
+        if (collectedVouchers.length > 0) {
+            voucherSection.classList.remove('hidden');
+            collectedVouchers.forEach((card) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'gallery-card rarity-voucher';
+                cardEl.innerHTML = `
+                    <img src="${card.image}" alt="${card.title}">
+                    <span class="card-number">#${card.id}</span>
+                `;
+                cardEl.addEventListener('click', () => viewCard(card));
+                voucherGrid.appendChild(cardEl);
+            });
+        } else {
+            voucherSection.classList.add('hidden');
+        }
     }
+
+    // Filter button handlers
+    galleryFilters.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+
+        initAudio();
+        playSound('click');
+
+        const sortType = btn.dataset.sort;
+
+        if (sortType === currentSort && sortType !== 'default') {
+            // Toggle direction
+            sortAscending = !sortAscending;
+            btn.classList.toggle('desc', !sortAscending);
+        } else {
+            // Switch to new sort
+            currentSort = sortType;
+            sortAscending = true;
+
+            // Update active states
+            galleryFilters.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('active', 'desc');
+            });
+            btn.classList.add('active');
+        }
+
+        renderGallery();
+    });
 
     function viewCard(card) {
         initAudio();
         playSound('click');
+        currentViewingCard = card;
+
         viewCardImage.src = card.image;
         viewCardTitle.textContent = card.title;
         viewCardText.textContent = card.text;
         viewFlipCard.classList.remove('flipped');
 
         // Set rarity class on view flip card
-        viewFlipCard.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary');
+        viewFlipCard.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary', 'rarity-voucher');
         viewFlipCard.classList.add('rarity-' + card.rarity);
+
+        // Show/hide redeem button for vouchers
+        if (card.rarity === 'voucher') {
+            redeemVoucherBtn.classList.remove('hidden');
+        } else {
+            redeemVoucherBtn.classList.add('hidden');
+        }
 
         cardViewModal.classList.remove('emerging');
         cardViewModal.classList.add('active', 'revealed');
@@ -1451,11 +1597,33 @@ function initGame() {
         playSound('flip');
     });
 
+    // Redeem voucher handler
+    redeemVoucherBtn.addEventListener('click', () => {
+        if (!currentViewingCard || currentViewingCard.rarity !== 'voucher') return;
+
+        initAudio();
+        playSound('reveal');
+
+        // Confirm redemption
+        if (confirm(`Möchtest du den "${currentViewingCard.title}" wirklich einlösen? Er wird aus deiner Sammlung entfernt.`)) {
+            removeCard(currentViewingCard.id);
+            cardViewModal.classList.remove('active', 'emerging', 'revealed');
+            viewFlipCard.classList.remove('flipped');
+            redeemVoucherBtn.classList.add('hidden');
+            currentViewingCard = null;
+            renderGallery();
+
+            // Show success message
+            alert('🎉 Gutschein eingelöst! Zeige diese Nachricht deinem Partner.');
+        }
+    });
+
     closeViewModal.addEventListener('click', () => {
         initAudio();
         playSound('click');
         cardViewModal.classList.remove('active', 'emerging', 'revealed');
         viewFlipCard.classList.remove('flipped');
+        redeemVoucherBtn.classList.add('hidden');
     });
 
     closeViewModal.addEventListener('touchend', (e) => {
@@ -1464,6 +1632,7 @@ function initGame() {
         playSound('click');
         cardViewModal.classList.remove('active', 'emerging', 'revealed');
         viewFlipCard.classList.remove('flipped');
+        redeemVoucherBtn.classList.add('hidden');
     });
 
     function startAnimation() {
@@ -1512,11 +1681,14 @@ function initGame() {
         flipCard.classList.remove('flipped');
 
         // Set rarity class on flip card
-        flipCard.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary');
+        flipCard.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary', 'rarity-voucher');
         flipCard.classList.add('rarity-' + currentCard.rarity);
 
         // Set label (new card or duplicate)
-        if (currentCardIsDuplicate) {
+        if (currentCard.rarity === 'voucher') {
+            cardLabel.textContent = '🎟️ GUTSCHEIN! 🎟️';
+            cardLabel.classList.remove('duplicate');
+        } else if (currentCardIsDuplicate) {
             cardLabel.textContent = '★ DUPLIKAT ★';
             cardLabel.classList.add('duplicate');
         } else {
@@ -1527,7 +1699,7 @@ function initGame() {
         // Set rarity text and class
         const rarityConfig = RARITY_CONFIG[currentCard.rarity];
         cardRarity.textContent = rarityConfig ? rarityConfig.name : currentCard.rarity;
-        cardRarity.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary');
+        cardRarity.classList.remove('rarity-common', 'rarity-rare', 'rarity-epic', 'rarity-legendary', 'rarity-voucher');
         cardRarity.classList.add('rarity-' + currentCard.rarity);
 
         cardModal.classList.remove('revealed');

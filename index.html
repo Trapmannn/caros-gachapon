@@ -87,14 +87,30 @@
     <!-- Gallery Modal -->
     <div class="gallery-modal" id="gallery-modal">
         <div class="gallery-header">
-            <div>
-                <h2>📚 Meine Sammlung</h2>
-                <p class="gallery-stats" id="gallery-stats">0 / 0 Karten gesammelt</p>
+            <h2>📚 Meine Sammlung</h2>
+            <div class="gallery-header-buttons">
+                <button class="filter-toggle-btn" id="filter-toggle-btn">⚙️ Filter</button>
+                <button class="gallery-close" id="gallery-close">Zurück</button>
             </div>
-            <button class="gallery-close" id="gallery-close">Zurück</button>
         </div>
-        <div class="gallery-grid" id="gallery-grid">
-            <!-- Cards will be inserted here -->
+        <div class="gallery-filters hidden" id="gallery-filters">
+            <button class="filter-btn active" data-sort="default">Standard</button>
+            <button class="filter-btn" data-sort="rarity">Rarität <span class="sort-arrow">↑</span></button>
+            <button class="filter-btn" data-sort="number">Nummer <span class="sort-arrow">↑</span></button>
+            <button class="filter-btn" data-sort="date">Datum <span class="sort-arrow">↑</span></button>
+        </div>
+        <div class="gallery-content" id="gallery-content">
+            <div class="gallery-grid" id="gallery-grid">
+                <!-- Cards will be inserted here -->
+            </div>
+            <div class="voucher-section" id="voucher-section">
+                <div class="voucher-divider">
+                    <span>🎟️ Gutscheine 🎟️</span>
+                </div>
+                <div class="voucher-grid" id="voucher-grid">
+                    <!-- Vouchers will be inserted here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -113,7 +129,10 @@
                     </div>
                 </div>
             </div>
-            <button class="close-btn" id="close-view-modal">Schließen</button>
+            <div class="view-modal-buttons">
+                <button class="redeem-btn hidden" id="redeem-voucher-btn">🎟️ Einlösen</button>
+                <button class="close-btn" id="close-view-modal">Schließen</button>
+            </div>
         </div>
     </div>
 
