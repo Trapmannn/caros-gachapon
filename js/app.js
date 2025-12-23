@@ -1393,30 +1393,38 @@ function initGame() {
     });
 
     function renderGallery() {
-        const collected = getCollectedCardsSorted();
-        galleryStats.textContent = `${collected.length} / ${allCards.length} Karten gesammelt`;
+        const collectedCount = collectedCardIds.length;
+        galleryStats.textContent = `${collectedCount} / ${allCards.length} Karten gesammelt`;
 
         galleryGrid.innerHTML = '';
 
-        if (collected.length === 0) {
-            galleryGrid.innerHTML = `
-                <div class="gallery-empty">
-                    <div class="gallery-empty-icon">🎰</div>
-                    <p>Du hast noch keine Karten gesammelt.</p>
-                    <p>Wirf eine Muenze ein!</p>
-                </div>
-            `;
-            return;
-        }
+        // Sort all cards by rarity order
+        const sortedCards = [...allCards].sort((a, b) => {
+            const orderA = RARITY_CONFIG[a.rarity]?.order ?? 0;
+            const orderB = RARITY_CONFIG[b.rarity]?.order ?? 0;
+            return orderA - orderB;
+        });
 
-        collected.forEach((card) => {
+        sortedCards.forEach((card) => {
             const cardEl = document.createElement('div');
-            cardEl.className = 'gallery-card rarity-' + card.rarity;
-            cardEl.innerHTML = `
-                <img src="${card.image}" alt="${card.title}">
-                <span class="card-number">#${card.id}</span>
-            `;
-            cardEl.addEventListener('click', () => viewCard(card));
+            const isCollected = isCardCollected(card.id);
+
+            if (isCollected) {
+                // Collected card - show image
+                cardEl.className = 'gallery-card rarity-' + card.rarity;
+                cardEl.innerHTML = `
+                    <img src="${card.image}" alt="${card.title}">
+                    <span class="card-number">#${card.id}</span>
+                `;
+                cardEl.addEventListener('click', () => viewCard(card));
+            } else {
+                // Not collected - show placeholder
+                cardEl.className = 'gallery-card placeholder';
+                cardEl.innerHTML = `
+                    <span class="card-number">#${card.id}</span>
+                `;
+            }
+
             galleryGrid.appendChild(cardEl);
         });
     }

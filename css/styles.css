@@ -742,51 +742,104 @@ canvas {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding: 20px;
+    padding: 16px;
     padding-bottom: max(40px, env(safe-area-inset-bottom));
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 15px;
-    align-content: start;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 16px;
     overscroll-behavior: contain;
+    background: linear-gradient(180deg, rgba(30, 30, 50, 0.5) 0%, rgba(20, 20, 35, 0.8) 100%);
+}
+
+@media (min-width: 600px) {
+    .gallery-grid {
+        gap: 20px;
+        padding: 25px;
+    }
 }
 
 .gallery-card {
+    width: calc(50% - 12px);
+    max-width: 160px;
+    height: auto;
     aspect-ratio: 3/4;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    border: 3px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    border: 3px solid rgba(255, 215, 0, 0.5);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease;
     position: relative;
+    background: #1a1a2e;
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+@media (min-width: 500px) {
+    .gallery-card {
+        width: calc(33.333% - 16px);
+        max-width: 180px;
+    }
+}
+
+@media (min-width: 768px) {
+    .gallery-card {
+        width: calc(25% - 18px);
+        max-width: 200px;
+    }
+}
+
+/* Placeholder for uncollected cards */
+.gallery-card.placeholder {
+    background: linear-gradient(145deg, #2a2a3a, #1a1a2e);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    box-shadow: none;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-card.placeholder::before {
+    content: '?';
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(24px, 8vw, 40px);
+    color: rgba(255, 255, 255, 0.15);
+    font-weight: 700;
+}
+
+.gallery-card.placeholder:active {
+    transform: none;
+}
+
+.gallery-card.placeholder .card-number {
+    color: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.4);
 }
 
 /* Rarity border colors for gallery cards */
 .gallery-card.rarity-common {
     border-color: #4ade80;
-    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
 }
 
 .gallery-card.rarity-rare {
     border-color: #3b82f6;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .gallery-card.rarity-epic {
     border-color: #a855f7;
-    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
 }
 
 .gallery-card.rarity-legendary {
     border-color: #ffd700;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 4px 15px rgba(255, 215, 0, 0.4);
-    animation: legendaryGlow 2s ease-in-out infinite;
+    animation: legendaryBorder 2s ease-in-out infinite;
 }
 
-@keyframes legendaryGlow {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 4px 15px rgba(255, 215, 0, 0.4); }
-    50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.7), 0 4px 20px rgba(255, 215, 0, 0.5); }
+@keyframes legendaryBorder {
+    0%, 100% { border-color: #ffd700; }
+    50% { border-color: #ffec8b; }
 }
 
 .gallery-card:active {
@@ -801,18 +854,18 @@ canvas {
 
 .gallery-card .card-number {
     position: absolute;
-    bottom: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.7);
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.75);
     color: #ffd93d;
     font-family: 'Fredoka', sans-serif;
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 20px;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
 }
 
 .gallery-empty {
-    grid-column: 1 / -1;
+    width: 100%;
     text-align: center;
     padding: 60px 20px;
     color: rgba(255, 255, 255, 0.5);
