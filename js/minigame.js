@@ -40,7 +40,7 @@ const MiniGame = {
             radius: 22,
             color: '#4a7c59',
             darkColor: '#2d4a35',
-            coinChance: 0,       // No coins!
+            coinChance: 0.02,       // No coins!
             scoreValue: 10
         },
         runner: {
@@ -49,7 +49,7 @@ const MiniGame = {
             radius: 18,
             color: '#8e44ad',
             darkColor: '#5b2c6f',
-            coinChance: 0.05,    // 10% chance
+            coinChance: 0.20,    // 10% chance
             scoreValue: 20
         },
         tank: {
@@ -58,7 +58,7 @@ const MiniGame = {
             radius: 32,
             color: '#c0392b',
             darkColor: '#7b241c',
-            coinChance: 0.50,    // 50% chance
+            coinChance: 0.60,    // 50% chance
             scoreValue: 50
         }
     },
