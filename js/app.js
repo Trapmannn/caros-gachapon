@@ -451,7 +451,7 @@ function initGame() {
 
     // First time bonus: 1 coin
     if (checkFirstTimeBonus()) {
-        coins += 4;
+        coins += 3;
         saveCoins(coins);
     }
 
@@ -1639,7 +1639,7 @@ function initGame() {
             renderGallery();
 
             // Show success message
-            alert('🎉 Gutschein eingelöst! Zeige diese Nachricht deinem Partner.');
+            alert('🎉 Gutschein eingelöst! Zeige diese Nachricht deinem Freund.');
         }
     });
 
