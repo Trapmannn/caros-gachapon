@@ -1292,8 +1292,53 @@ function initGame() {
         handleInsert();
     });
 
-    // Audio unlock flag - only unlock once
+    // Audio unlock flag - tracks if audio has been unlocked in this session
     let audioUnlocked = false;
+
+    // Reload HTML5 Audio objects (needed after PWA suspend)
+    function reloadAudioObjects() {
+        try {
+            // Reload noCoinsAudio
+            if (noCoinsAudio) {
+                noCoinsAudio.load();
+            }
+            // Reload duplicateAudio
+            if (duplicateAudio) {
+                duplicateAudio.load();
+            }
+            // Reload all rarity audios
+            Object.values(rarityAudios).forEach(audio => {
+                if (audio) {
+                    audio.load();
+                }
+            });
+            console.log('Audio-Objekte neu geladen');
+        } catch (e) {
+            console.log('Audio reload error:', e);
+        }
+    }
+
+    // Handle visibility change (PWA coming back from background)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            console.log('App wieder sichtbar - Audio wird reaktiviert');
+
+            // Resume AudioContext if suspended
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => {
+                    console.log('AudioContext resumed');
+                }).catch(err => {
+                    console.log('AudioContext resume error:', err);
+                });
+            }
+
+            // Reload HTML5 Audio objects
+            reloadAudioObjects();
+
+            // Reset audio unlock flag so it will be unlocked on next interaction
+            audioUnlocked = false;
+        }
+    });
 
     // Unlock all audio on first user interaction
     function unlockAllAudio() {
