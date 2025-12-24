@@ -183,6 +183,48 @@ const allCards = [
         text: 'Meine Löwin, meine Bärin, mein Einhorn. Du bist alles für mich auch wenn du mich manchmal anfauchst.',
         rarity: 'common'
     },
+    {
+        id: 17,
+        image: 'images/IMG_4046.JPG',
+        title: 'Grantelmaus',
+        text: 'Wenn der Finger deine Love Language ist, musst dur mich sehr sehr krass lieben',
+        rarity: 'common'
+    },
+    {
+        id: 18,
+        image: 'images/IMG_4050.JPG',
+        title: 'Münchner Stadtmusikanten',
+        text: 'Wir stapeln vielleicht nicht so hoch wie das Original aber endlich normal gross zu sein war echt eine tolle Erfahrung. Danke dafür!',
+        rarity: 'rare'
+    },
+    {
+        id: 19,
+        image: 'images/IMG_4051.JPG',
+        title: 'Erste Hilfe Koffer',
+        text: 'Das Happy Meal heilt fast alle deiner Beschwerden... vorausgesetzt ich geh nicht crashout am terminal. ',
+        rarity: 'common'
+    },
+    {
+        id: 20,
+        image: 'images/IMG_4052.JPG',
+        title: 'Sonne Sommer Caro',
+        text: 'Das Bild sieht aus, wie sich der Mittagsschalf bei mir angefühlt hat. Wie die Sonne durchs Fenster geschienen hat... werd ich nie vergessen.',
+        rarity: 'rare'
+    },
+    {
+        id: 21,
+        image: 'images/IMG_4047.JPG',
+        title: 'So viel Sex in einer Person',
+        text: 'Wärst du ein Mann, würde ich Top geben. #nohomo',
+        rarity: 'epic'
+    },
+    {
+        id: 22,
+        image: 'images/e1dee218-db3e-49c7-a879-94add21cb671.JPG',
+        title: 'Möge der Arsch mit mir sein',
+        text: 'Wär ich Anakin und du Padme, würde ich auch Kinder töten',
+        rarity: 'common'
+    },
 
     // =============================================
     // GUTSCHEIN-KARTEN (Verbrauchskarten)
