@@ -18,7 +18,8 @@ const RARITY_SOUNDS = {
     common: 'sounds/gewoehnlich.mp3',
     rare: 'sounds/selten.mp3',
     epic: 'sounds/episch.mp3',
-    legendary: 'sounds/legendaer.mp3'
+    legendary: 'sounds/legendaer.mp3',
+    voucher: 'sounds/gutschein.mp3'
 };
 
 // Sound wenn man ein Duplikat zieht
@@ -450,13 +451,13 @@ function initGame() {
 
     // First time bonus: 1 coin
     if (checkFirstTimeBonus()) {
-        coins += 100;
+        coins += 4;
         saveCoins(coins);
     }
 
     // Daily bonus: 1 coin per day
     if (checkDailyBonus()) {
-        coins += 1;
+        coins += 2;
         saveCoins(coins);
     }
 
@@ -1199,17 +1200,15 @@ function initGame() {
     const coinTargetPos = new THREE.Vector3(-0.5, 1.1, 0.72);
 
     function drawRandomCard() {
-        // Group all cards by rarity
-        const cardsByRarity = {
-            common: allCards.filter(c => c.rarity === 'common'),
-            rare: allCards.filter(c => c.rarity === 'rare'),
-            epic: allCards.filter(c => c.rarity === 'epic'),
-            legendary: allCards.filter(c => c.rarity === 'legendary')
-        };
+        // Group all cards by rarity (dynamically from RARITY_CONFIG)
+        const cardsByRarity = {};
+        Object.keys(RARITY_CONFIG).forEach(rarity => {
+            cardsByRarity[rarity] = allCards.filter(c => c.rarity === rarity);
+        });
 
         // Determine which rarity to draw based on probabilities
         const roll = Math.random();
-        let selectedRarity;
+        let selectedRarity = null;
         let cumulative = 0;
 
         for (const [rarity, config] of Object.entries(RARITY_CONFIG)) {
@@ -1218,6 +1217,11 @@ function initGame() {
                 selectedRarity = rarity;
                 break;
             }
+        }
+
+        // Safety fallback if no rarity was selected (shouldn't happen if probabilities sum to 1)
+        if (!selectedRarity) {
+            selectedRarity = 'common';
         }
 
         // Get cards of that rarity
@@ -1297,11 +1301,12 @@ function initGame() {
         audioUnlocked = true;
 
         // Sammle alle Audio-Objekte die entsperrt werden muessen
+        // WICHTIG: passwordAudio NICHT einschließen - wird bereits beim Passwort abgespielt
+        // und wuerde sonst doppelt abgespielt werden
         const allAudios = [
             ...Object.values(rarityAudios),
             duplicateAudio,
-            noCoinsAudio,
-            passwordAudio
+            noCoinsAudio
         ].filter(audio => audio !== null);
 
         // Entsperre jedes Audio durch kurzes Abspielen (stumm geschaltet)
@@ -1736,8 +1741,11 @@ function initGame() {
         cardModal.classList.add('revealed');
         createSparkles();
 
-        // Play duplicate sound if it's a duplicate, otherwise play rarity sound
-        if (currentCardIsDuplicate) {
+        // Play appropriate sound based on card type
+        // Vouchers always play voucher sound (no duplicate sound for vouchers)
+        if (currentCard.rarity === 'voucher') {
+            playRaritySound('voucher');
+        } else if (currentCardIsDuplicate) {
             playDuplicateSound();
         } else {
             playRaritySound(currentCard.rarity);

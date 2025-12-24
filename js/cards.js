@@ -40,31 +40,31 @@ const RARITY_CONFIG = {
     common: {
         name: 'Gewöhnlich',
         color: '#4ade80',
-        probability: 0,
+        probability: 0.485,
         order: 0
     },
     rare: {
         name: 'Selten',
         color: '#3b82f6',
-        probability: 0,
+        probability: 0.30,
         order: 1
     },
     epic: {
         name: 'Episch',
         color: '#a855f7',
-        probability: 0,
+        probability: 0.15,
         order: 2
     },
     legendary: {
         name: 'Legendär',
         color: '#ffd700',
-        probability: 0,
+        probability: 0.05,
         order: 3
     },
     voucher: {
-        name: 'Gutschein',
+        name: '',
         color: '#ff00ff',
-        probability: 1.0,
+        probability: 0.015,
         order: 99,
         isVoucher: true
     }
@@ -189,7 +189,7 @@ const allCards = [
     // =============================================
     {
         id: 100,
-        image: 'images/voucher-massage.jpg',
+        image: 'images/massage.png',
         title: 'Massage-Gutschein',
         text: 'Ein entspannender Massage-Gutschein, einlösbar bei deinem Lieblingsmenschen!',
         rarity: 'voucher',
@@ -197,7 +197,7 @@ const allCards = [
     },
     {
         id: 101,
-        image: 'images/voucher-date.jpg',
+        image: 'images/datenight.png',
         title: 'Date-Night Gutschein',
         text: 'Ein romantischer Abend nach Wahl - Restaurant, Kino oder was auch immer du willst!',
         rarity: 'voucher',
