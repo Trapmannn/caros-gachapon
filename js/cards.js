@@ -225,6 +225,62 @@ const allCards = [
         text: 'Wär ich Anakin und du Padme, würde ich auch Kinder töten',
         rarity: 'common'
     },
+    {
+        id: 23,
+        image: 'images/e966edbc-7a08-4f1d-bddd-a9d39ae8e457.JPG',
+        title: 'Barbie und Ken',
+        text: 'Für mich gibt es nur eine Barbie und die ist nichtmal aus Plastik. Ich würde mir aber eine Platik Caro kaufen...',
+        rarity: 'rare'
+    },
+    {
+        id: 24,
+        image: 'images/IMG_4049.JPG',
+        title: 'Caro Khalifa',
+        text: 'Die Brille ist zwar nicht echt, aber wenn du mich weiter so blendest, brauche ich bald eine mit Sehstärke.',
+        rarity: 'common'
+    },
+    {
+        id: 25,
+        image: 'images/IMG_5283.jpg',
+        title: 'Bester Barber der Stadt oder der Gegend?',
+        text: 'Du checkst zwar die Reference nicht aber so gut hab ich noch nie ausgesehen.',
+        rarity: 'common'
+    },
+    {
+        id: 26,
+        image: 'images/IMG_8885.JPG',
+        title: 'Meine Gang, sie macht switch heels...',
+        text: 'Spaß, ich kann selber keine switch heels aber vielleicht kannst du mir irgendwann mal was zeigen.',
+        rarity: 'epic'
+    },
+    {
+        id: 27,
+        image: 'images/P1110890.JPG',
+        title: 'In den Bergen bist du zu Haus...',
+        text: 'Vielleicht sogar ein bisschen zu sehr... es braucht nur einen Stein und viel Liebe ;)',
+        rarity: 'rare'
+    },
+    {
+        id: 28,
+        image: 'images/55284790-764d-4b7f-aa44-f0397503a6a3.JPG',
+        title: 'Slay',
+        text: 'Mir fällt zwar nichts hierzu ein, aber du bist so wunderschön, dass ich mir das Foto nochmal extra abgespeichert habe.',
+        rarity: 'common'
+    },
+    {
+        id: 29,
+        image: 'images/cff07549-0bb5-4098-aedc-767a6dc700bf.JPG',
+        title: 'Wir bald',
+        text: 'Bald bin ich so groß wie auf dem Foto. Ich liebe KI.',
+        rarity: 'legendary'
+    },
+    {
+        id: 30,
+        image: 'images/d179a697-6016-43d0-b15a-5fa6cbffd9e3.JPG',
+        title: 'HOT HOT HOT',
+        text: 'Ich weiß gar nicht wie man so einen Blick machen kann. Ich will auf jeden Fall Sex... jetzt',
+        rarity: 'epic'
+    },
 
     // =============================================
     // GUTSCHEIN-KARTEN (Verbrauchskarten)
