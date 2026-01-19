@@ -1522,6 +1522,24 @@ function initGame() {
         });
     });
 
+    // Start Caro Crush Saga game
+    const gameCrushOption = document.getElementById('game-crush');
+    gameCrushOption.addEventListener('click', () => {
+        initAudio();
+        playSound('click');
+        minigameSelection.classList.remove('active');
+        minigameContainer.classList.add('active');
+        CrushGame.init(minigameCanvas, (earnedCoins) => {
+            // Callback when exiting minigame
+            minigameContainer.classList.remove('active');
+            if (earnedCoins > 0) {
+                coins += earnedCoins;
+                saveCoins(coins);
+                coinCountEl.textContent = coins;
+            }
+        });
+    });
+
     function renderGallery() {
         // Separate regular cards and vouchers
         const regularCards = allCards.filter(c => c.rarity !== 'voucher');
