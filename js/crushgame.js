@@ -48,15 +48,18 @@ const CrushGame = {
     // Time/Energy system
     energy: 100,
     maxEnergy: 100,
-    baseEnergyDecayRate: 0.15, // Base decay rate (slower start)
-    energyDecayRate: 0.06,
-    energyGainPerMatch: 4,
-    energyGainPerSpecial: 8,
+    baseEnergyDecayRate: 0.10, // Base decay rate (slower start)
+    energyDecayRate: 0.05,
+    energyGainPerMatch: 3,
+    energyGainPerSpecial: 6,
+    energyGainedThisMove: 0,
+    maxEnergyPerMove: 40,
+    triggeredSpecials: null, // Set to track already triggered special candies
 
     // Progressive difficulty (time-based, not FPS-based)
     gameStartTime: 0,
     lastUpdateTime: 0,
-    difficultyMultiplier: 1.8,
+    difficultyMultiplier: 1.2,
 
     // Touch handling
     touchStartX: 0,
@@ -546,6 +549,10 @@ const CrushGame = {
 
         if (!candy1 || !candy2) return;
 
+        // Reset energy cap and triggered specials for this move
+        this.energyGainedThisMove = 0;
+        this.triggeredSpecials = new Set();
+
         // Check if either tile is frozen - can't swap frozen tiles!
         if (this.frozenTiles && (this.frozenTiles[row1][col1] > 0 || this.frozenTiles[row2][col2] > 0)) {
             this.playSound('noMatch');
@@ -675,6 +682,10 @@ const CrushGame = {
         const targetType = targetCandy.type;
         const targetCandies = [];
 
+        // Check if target candy is a special candy - if so, all hit candies will trigger that effect!
+        const targetSpecial = targetCandy.special && targetCandy.special !== this.specialTypes.NONE
+            ? targetCandy.special : null;
+
         // Find all candies of the target color
         for (let row = 0; row < this.gridSize; row++) {
             for (let col = 0; col < this.gridSize; col++) {
@@ -759,21 +770,43 @@ const CrushGame = {
             // After delay, destroy all target candies AND Caro (only once)
             if (elapsed >= destroyDelay && !destroyTriggered) {
                 destroyTriggered = true;
-                targetCandies.forEach(target => {
-                    const candy = this.grid[target.row][target.col];
-                    if (candy && !candy.matched) {
-                        candy.matched = true;
-                        this.score += 50;
-                    }
-                });
+
+                // Reset triggered specials for this chain
+                this.triggeredSpecials = new Set();
+
+                // If Caro was swapped with a special candy, apply that effect to all hit candies!
+                if (targetSpecial) {
+                    targetCandies.forEach(target => {
+                        const candy = this.grid[target.row][target.col];
+                        if (candy && !candy.matched) {
+                            // Give this candy the special type and trigger it
+                            candy.special = targetSpecial;
+                            this.triggerSpecialEffect(candy);
+                        }
+                    });
+                } else {
+                    // Normal destruction
+                    targetCandies.forEach(target => {
+                        const candy = this.grid[target.row][target.col];
+                        if (candy && !candy.matched) {
+                            candy.matched = true;
+                            this.score += 50;
+                        }
+                    });
+                }
 
                 // Also mark Caro as matched so she disappears
                 caroCandy.matched = true;
                 this.score += 50;
 
-                this.energy = Math.min(this.maxEnergy, this.energy + targetCandies.length * 3);
+                // Also mark the target candy as matched
+                if (!targetCandy.matched) {
+                    targetCandy.matched = true;
+                }
 
-                if (Math.random() < 0.15 + targetCandies.length * 0.01) {
+                this.addEnergy(targetCandies.length * 3);
+
+                if (Math.random() < 0.08 + targetCandies.length * 0.01) {
                     this.coinsEarned++;
                     this.playSound('coin');
                     this.floatingTexts.push({
@@ -966,8 +999,8 @@ const CrushGame = {
                 size: this.combo > 2 ? 24 : 18
             });
 
-            // Energy gain
-            this.energy = Math.min(this.maxEnergy, this.energy + this.energyGainPerMatch * Math.min(this.combo, 5) * 0.5);
+            // Energy gain (with per-move cap)
+            this.addEnergy(this.energyGainPerMatch * Math.min(this.combo, 5) * 0.5);
 
             // Create special candies
             if (match.length >= 4 && !specialCreatedAt) {
@@ -981,14 +1014,14 @@ const CrushGame = {
                     specialCandy.matched = false;
                     specialCreatedAt = specialCell;
                     this.playSound('special');
-                    this.energy = Math.min(this.maxEnergy, this.energy + this.energyGainPerSpecial);
+                    this.addEnergy(this.energyGainPerSpecial);
                 } else if (match.length >= 5) {
                     // Color bomb
                     specialCandy.special = this.specialTypes.COLOR_BOMB;
                     specialCandy.matched = false;
                     specialCreatedAt = specialCell;
                     this.playSound('special');
-                    this.energy = Math.min(this.maxEnergy, this.energy + this.energyGainPerSpecial * 2);
+                    this.addEnergy(this.energyGainPerSpecial * 2);
                 }
             }
         });
@@ -1007,7 +1040,7 @@ const CrushGame = {
                         candy.matched = false;
                         specialCreatedAt = cell;
                         this.playSound('special');
-                        this.energy = Math.min(this.maxEnergy, this.energy + this.energyGainPerSpecial);
+                        this.addEnergy(this.energyGainPerSpecial);
                         break;
                     }
                 }
@@ -1110,10 +1143,33 @@ const CrushGame = {
         animateRemoval();
     },
 
-    triggerSpecialEffect(candy) {
+    // Helper function to add energy with per-move cap
+    addEnergy(amount) {
+        const remaining = this.maxEnergyPerMove - this.energyGainedThisMove;
+        const actualGain = Math.min(amount, remaining);
+        if (actualGain > 0) {
+            this.energy = Math.min(this.maxEnergy, this.energy + actualGain);
+            this.energyGainedThisMove += actualGain;
+        }
+    },
+
+    triggerSpecialEffect(candy, chainDepth = 0) {
+        // Prevent infinite loops and excessive chaining
+        if (chainDepth > 10) return;
+
+        // Track triggered specials to avoid retriggering
+        if (!this.triggeredSpecials) {
+            this.triggeredSpecials = new Set();
+        }
+
+        const candyKey = `${candy.row}-${candy.col}`;
+        if (this.triggeredSpecials.has(candyKey)) return;
+        this.triggeredSpecials.add(candyKey);
+
         this.playSound('explosion');
 
         const affected = [];
+        const specialsToTrigger = []; // Collect special candies hit by this effect
 
         switch (candy.special) {
             case this.specialTypes.STRIPE_H:
@@ -1123,9 +1179,14 @@ const CrushGame = {
                         this.frozenTiles[candy.row][col] = 0;
                         this.playSound('thaw');
                     }
-                    if (this.grid[candy.row][col] && !this.grid[candy.row][col].matched) {
-                        this.grid[candy.row][col].matched = true;
-                        affected.push(this.grid[candy.row][col]);
+                    const hitCandy = this.grid[candy.row][col];
+                    if (hitCandy && !hitCandy.matched) {
+                        // Check if it's a special candy (chain reaction)
+                        if (hitCandy.special && hitCandy.special !== this.specialTypes.NONE) {
+                            specialsToTrigger.push(hitCandy);
+                        }
+                        hitCandy.matched = true;
+                        affected.push(hitCandy);
                         this.score += 20;
                     }
                 }
@@ -1139,9 +1200,14 @@ const CrushGame = {
                         this.frozenTiles[row][candy.col] = 0;
                         this.playSound('thaw');
                     }
-                    if (this.grid[row][candy.col] && !this.grid[row][candy.col].matched) {
-                        this.grid[row][candy.col].matched = true;
-                        affected.push(this.grid[row][candy.col]);
+                    const hitCandy = this.grid[row][candy.col];
+                    if (hitCandy && !hitCandy.matched) {
+                        // Check if it's a special candy (chain reaction)
+                        if (hitCandy.special && hitCandy.special !== this.specialTypes.NONE) {
+                            specialsToTrigger.push(hitCandy);
+                        }
+                        hitCandy.matched = true;
+                        affected.push(hitCandy);
                         this.score += 20;
                     }
                 }
@@ -1154,9 +1220,14 @@ const CrushGame = {
                         const r = candy.row + dr;
                         const c = candy.col + dc;
                         if (r >= 0 && r < this.gridSize && c >= 0 && c < this.gridSize) {
-                            if (this.grid[r][c] && !this.grid[r][c].matched) {
-                                this.grid[r][c].matched = true;
-                                affected.push(this.grid[r][c]);
+                            const hitCandy = this.grid[r][c];
+                            if (hitCandy && !hitCandy.matched) {
+                                // Check if it's a special candy (chain reaction)
+                                if (hitCandy.special && hitCandy.special !== this.specialTypes.NONE) {
+                                    specialsToTrigger.push(hitCandy);
+                                }
+                                hitCandy.matched = true;
+                                affected.push(hitCandy);
                                 this.score += 30;
                             }
                         }
@@ -1169,12 +1240,16 @@ const CrushGame = {
                 const targetType = Math.floor(Math.random() * this.candyTypes.length);
                 for (let row = 0; row < this.gridSize; row++) {
                     for (let col = 0; col < this.gridSize; col++) {
-                        const c = this.grid[row][col];
-                        if (c && c.type === targetType && !c.matched) {
-                            c.matched = true;
-                            affected.push(c);
+                        const hitCandy = this.grid[row][col];
+                        if (hitCandy && hitCandy.type === targetType && !hitCandy.matched) {
+                            // Check if it's a special candy (chain reaction)
+                            if (hitCandy.special && hitCandy.special !== this.specialTypes.NONE) {
+                                specialsToTrigger.push(hitCandy);
+                            }
+                            hitCandy.matched = true;
+                            affected.push(hitCandy);
                             this.score += 40;
-                            this.createRainbowParticles(c.x, c.y);
+                            this.createRainbowParticles(hitCandy.x, hitCandy.y);
                         }
                     }
                 }
@@ -1184,25 +1259,33 @@ const CrushGame = {
                 // Clear all Caro candies with mega effect
                 for (let row = 0; row < this.gridSize; row++) {
                     for (let col = 0; col < this.gridSize; col++) {
-                        const c = this.grid[row][col];
-                        if (c && c.isCaro && !c.matched) {
-                            c.matched = true;
-                            affected.push(c);
+                        const hitCandy = this.grid[row][col];
+                        if (hitCandy && hitCandy.isCaro && !hitCandy.matched) {
+                            hitCandy.matched = true;
+                            affected.push(hitCandy);
                             this.score += 100;
-                            this.createRainbowParticles(c.x, c.y);
+                            this.createRainbowParticles(hitCandy.x, hitCandy.y);
                         }
                     }
                 }
                 // Also clear row and column
                 for (let col = 0; col < this.gridSize; col++) {
-                    if (this.grid[candy.row][col] && !this.grid[candy.row][col].matched) {
-                        this.grid[candy.row][col].matched = true;
+                    const hitCandy = this.grid[candy.row][col];
+                    if (hitCandy && !hitCandy.matched) {
+                        if (hitCandy.special && hitCandy.special !== this.specialTypes.NONE) {
+                            specialsToTrigger.push(hitCandy);
+                        }
+                        hitCandy.matched = true;
                         this.score += 20;
                     }
                 }
                 for (let row = 0; row < this.gridSize; row++) {
-                    if (this.grid[row][candy.col] && !this.grid[row][candy.col].matched) {
-                        this.grid[row][candy.col].matched = true;
+                    const hitCandy = this.grid[row][candy.col];
+                    if (hitCandy && !hitCandy.matched) {
+                        if (hitCandy.special && hitCandy.special !== this.specialTypes.NONE) {
+                            specialsToTrigger.push(hitCandy);
+                        }
+                        hitCandy.matched = true;
                         this.score += 20;
                     }
                 }
@@ -1215,7 +1298,13 @@ const CrushGame = {
                 break;
         }
 
-        this.energy = Math.min(this.maxEnergy, this.energy + this.energyGainPerSpecial);
+        // Add energy with per-move cap
+        this.addEnergy(this.energyGainPerSpecial);
+
+        // Chain reaction: trigger any special candies that were hit
+        specialsToTrigger.forEach(special => {
+            this.triggerSpecialEffect(special, chainDepth + 1);
+        });
     },
 
     createLineEffect(row, col, horizontal) {
@@ -2477,54 +2566,64 @@ const CrushGame = {
                 break;
 
             case this.specialTypes.WRAPPED:
-                // Wrapper effect
-                ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)';
-                ctx.lineWidth = 2;
+                // Wrapped candy - crossing ribbons/bands
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+
+                // Horizontal golden band
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.9)';
                 ctx.beginPath();
-                ctx.moveTo(-size * 1.2, -size * 0.3);
-                ctx.lineTo(-size * 1.4, -size * 0.6);
-                ctx.moveTo(-size * 1.2, size * 0.3);
-                ctx.lineTo(-size * 1.4, size * 0.6);
-                ctx.moveTo(size * 1.2, -size * 0.3);
-                ctx.lineTo(size * 1.4, -size * 0.6);
-                ctx.moveTo(size * 1.2, size * 0.3);
-                ctx.lineTo(size * 1.4, size * 0.6);
+                ctx.moveTo(-size * 1.1, 0);
+                ctx.lineTo(size * 1.1, 0);
                 ctx.stroke();
 
-                // Pulsing ring
-                const pulse = Math.sin(this.animationTime * 5) * 3;
-                ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
-                ctx.lineWidth = 2;
+                // Vertical golden band
                 ctx.beginPath();
-                ctx.arc(0, 0, size + 5 + pulse, 0, Math.PI * 2);
+                ctx.moveTo(0, -size * 1.1);
+                ctx.lineTo(0, size * 1.1);
                 ctx.stroke();
+
+                // Center bow/knot
+                ctx.fillStyle = 'rgba(255, 180, 0, 0.95)';
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Sparkle on bow
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(-size * 0.08, -size * 0.08, 3, 0, Math.PI * 2);
+                ctx.fill();
                 break;
 
             case this.specialTypes.COLOR_BOMB:
-                // Rainbow ring
-                const rainbowColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#9400D3'];
-                const segments = rainbowColors.length;
-                ctx.lineWidth = 4;
+                // Rotating rainbow dots around the candy
+                const cbColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#9400D3'];
 
-                for (let i = 0; i < segments; i++) {
-                    ctx.strokeStyle = rainbowColors[i];
-                    ctx.beginPath();
-                    const startAngle = (i / segments) * Math.PI * 2 + this.animationTime * 2;
-                    const endAngle = ((i + 1) / segments) * Math.PI * 2 + this.animationTime * 2;
-                    ctx.arc(0, 0, size + 6, startAngle, endAngle);
-                    ctx.stroke();
-                }
-
-                // Inner sparkles
-                ctx.fillStyle = '#FFFFFF';
                 for (let i = 0; i < 6; i++) {
-                    const angle = (i / 6) * Math.PI * 2 + this.animationTime * 3;
-                    const x = Math.cos(angle) * size * 0.5;
-                    const y = Math.sin(angle) * size * 0.5;
+                    const angle = (i / 6) * Math.PI * 2 + this.animationTime * 2;
+                    const dotX = Math.cos(angle) * (size + 8);
+                    const dotY = Math.sin(angle) * (size + 8);
+
+                    // Colored dot
+                    ctx.fillStyle = cbColors[i];
                     ctx.beginPath();
-                    ctx.arc(x, y, 2, 0, Math.PI * 2);
+                    ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // White highlight on each dot
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.beginPath();
+                    ctx.arc(dotX - 1, dotY - 1, 2, 0, Math.PI * 2);
                     ctx.fill();
                 }
+
+                // Central star sparkle
+                ctx.fillStyle = '#FFFFFF';
+                const starSize = 4 + Math.sin(this.animationTime * 5) * 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, starSize, 0, Math.PI * 2);
+                ctx.fill();
                 break;
         }
     },
