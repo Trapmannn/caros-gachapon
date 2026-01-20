@@ -48,15 +48,15 @@ const CrushGame = {
     // Time/Energy system
     energy: 100,
     maxEnergy: 100,
-    baseEnergyDecayRate: 0.04, // Base decay rate (slower start)
+    baseEnergyDecayRate: 0.08, // Base decay rate (slower start)
     energyDecayRate: 0.04,
-    energyGainPerMatch: 6,
-    energyGainPerSpecial: 12,
+    energyGainPerMatch: 4,
+    energyGainPerSpecial: 8,
 
     // Progressive difficulty (time-based, not FPS-based)
     gameStartTime: 0,
     lastUpdateTime: 0,
-    difficultyMultiplier: 1.0,
+    difficultyMultiplier: 1.5,
 
     // Touch handling
     touchStartX: 0,
