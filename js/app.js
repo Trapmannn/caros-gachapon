@@ -135,7 +135,7 @@ function checkPassword() {
     if (pwInput.value === 'lucahdl') {
         playPasswordSound();
         passwordScreen.classList.add('hidden');
-        initGame();
+        startValentineFlow();
     } else {
         pwError.style.display = 'block';
         pwInput.value = '';
@@ -147,6 +147,162 @@ pwSubmit.addEventListener('click', checkPassword);
 pwInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') checkPassword();
 });
+
+// ============================================
+// VALENTINE'S DAY FLOW
+// ============================================
+function startValentineFlow() {
+    const valentineScreen = document.getElementById('valentine-screen');
+    const valentinePrize = document.getElementById('valentine-prize');
+    const valentineQuestion = document.getElementById('valentine-question');
+    const valentineButtons = document.getElementById('valentine-buttons');
+    const valentineYes = document.getElementById('valentine-yes');
+    const valentineNo = document.getElementById('valentine-no');
+    const valentineContinue = document.getElementById('valentine-continue');
+    const VALENTINE_BG = '#ff69b4';
+    const DEFAULT_BG = '#1a1a2e';
+
+    function setThemeColor(color) {
+        // Remove existing theme-color meta tags
+        document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
+        // Create fresh one (Safari picks up new tags more reliably)
+        const meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        meta.content = color;
+        document.head.appendChild(meta);
+    }
+
+    function setValentineBackground() {
+        document.documentElement.classList.add('valentine-active');
+        document.documentElement.style.setProperty('background', VALENTINE_BG, 'important');
+        document.body.style.setProperty('background', VALENTINE_BG, 'important');
+        setThemeColor(VALENTINE_BG);
+    }
+
+    function restoreBackground() {
+        document.documentElement.classList.remove('valentine-active');
+        document.documentElement.style.removeProperty('background');
+        document.body.style.removeProperty('background');
+        setThemeColor(DEFAULT_BG);
+    }
+
+    let noCount = 0;
+
+    const sureMessages = [
+        'Bist du sicher?',
+        'Wirklich sicher?',
+        'Ganz ganz sicher?',
+        'Überleg nochmal...',
+        'Letzte Chance!'
+    ];
+
+    function showPrize() {
+        valentineScreen.classList.remove('active');
+        valentinePrize.classList.add('active');
+
+        // Add Valentine card to collection (only once)
+        const STORAGE_KEY_V2 = 'caros_gachapon_collection_v2';
+        let collection = {};
+        try {
+            collection = JSON.parse(localStorage.getItem(STORAGE_KEY_V2) || '{}');
+        } catch (e) {}
+        if (!collection[999]) {
+            collection[999] = { collectedAt: Date.now() };
+            localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(collection));
+        }
+    }
+
+    function showInitialQuestion() {
+        valentineQuestion.innerHTML = 'Willst du mein Valentinstags-Schatz sein?';
+        const content = valentineScreen.querySelector('.valentine-content');
+        content.style.animation = 'none';
+        content.offsetHeight;
+        content.style.animation = 'valentineFadeIn 0.5s ease-out';
+
+        valentineButtons.innerHTML = '';
+
+        const yesBtn = document.createElement('button');
+        yesBtn.className = 'valentine-btn valentine-yes';
+        yesBtn.textContent = 'JA';
+        yesBtn.addEventListener('click', showPrize);
+
+        const noBtn = document.createElement('button');
+        noBtn.className = 'valentine-btn valentine-no';
+        noBtn.textContent = 'NEIN';
+        noBtn.addEventListener('click', () => {
+            noCount = 0;
+            handleSureStep();
+        });
+
+        valentineButtons.appendChild(yesBtn);
+        valentineButtons.appendChild(noBtn);
+    }
+
+    function showSureQuestion(text, isFinal) {
+        valentineQuestion.innerHTML = text;
+        const content = valentineScreen.querySelector('.valentine-content');
+        content.style.animation = 'none';
+        content.offsetHeight;
+        content.style.animation = 'valentineFadeIn 0.5s ease-out';
+
+        valentineButtons.innerHTML = '';
+
+        if (isFinal) {
+            // Final screen: two JA buttons, no NEIN
+            const yesBtn1 = document.createElement('button');
+            yesBtn1.className = 'valentine-btn valentine-yes';
+            yesBtn1.textContent = 'JA';
+            yesBtn1.addEventListener('click', showPrize);
+
+            const yesBtn2 = document.createElement('button');
+            yesBtn2.className = 'valentine-btn valentine-yes';
+            yesBtn2.textContent = 'JA';
+            yesBtn2.addEventListener('click', showPrize);
+
+            valentineButtons.appendChild(yesBtn1);
+            valentineButtons.appendChild(yesBtn2);
+        } else {
+            // "Are you sure?" screens: JA = go deeper, NEIN = back to start (highlighted)
+            const yesBtn = document.createElement('button');
+            yesBtn.className = 'valentine-btn valentine-no'; // grey (bad choice)
+            yesBtn.textContent = 'JA';
+            yesBtn.addEventListener('click', handleSureStep);
+
+            const noBtn = document.createElement('button');
+            noBtn.className = 'valentine-btn valentine-yes'; // pink (good choice - go back)
+            noBtn.textContent = 'NEIN';
+            noBtn.addEventListener('click', showInitialQuestion);
+
+            valentineButtons.appendChild(yesBtn);
+            valentineButtons.appendChild(noBtn);
+        }
+    }
+
+    function handleSureStep() {
+        if (noCount < sureMessages.length) {
+            showSureQuestion(sureMessages[noCount], false);
+            noCount++;
+        } else {
+            showSureQuestion('Ok versuchen wir es noch einmal...<br>Willst du mein Valentinstags-Schatz sein?', true);
+        }
+    }
+
+    // Initial setup
+    valentineYes.addEventListener('click', showPrize);
+    valentineNo.addEventListener('click', () => {
+        noCount = 0;
+        handleSureStep();
+    });
+
+    valentineContinue.addEventListener('click', () => {
+        valentinePrize.classList.remove('active');
+        restoreBackground();
+        initGame();
+    });
+
+    setValentineBackground();
+    valentineScreen.classList.add('active');
+}
 
 // Game initialization
 function initGame() {
@@ -187,7 +343,7 @@ function initGame() {
 
     function getAvailableCards() {
         const ids = getCollectedCardIds();
-        return allCards.filter(card => !ids.includes(card.id));
+        return allCards.filter(card => !ids.includes(card.id) && !card.isValentine);
     }
 
     function getCollectedCards() {
@@ -1584,6 +1740,11 @@ function initGame() {
 
             // In filter mode (not default), only show collected cards
             if (currentSort !== 'default' && !collected) {
+                return;
+            }
+
+            // Hide Valentine card placeholder when not collected
+            if (card.isValentine && !collected) {
                 return;
             }
 

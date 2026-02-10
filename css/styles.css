@@ -17,6 +17,10 @@ html {
     touch-action: none;
 }
 
+html.valentine-active {
+    background: #ff69b4 !important;
+}
+
 body {
     width: 100%;
     height: 100%;
@@ -34,6 +38,14 @@ body {
     -webkit-overflow-scrolling: touch;
     padding: 0;
     margin: 0;
+}
+
+html.valentine-active body {
+    background: #ff69b4 !important;
+}
+
+html.valentine-active body::before {
+    display: none !important;
 }
 
 body::before {
@@ -147,6 +159,200 @@ body::before {
 
 #password-screen.hidden {
     display: none;
+}
+
+/* ============================================
+   VALENTINE'S DAY SCREEN
+   ============================================ */
+
+#valentine-screen,
+#valentine-prize {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, #ffb6c1, #ff69b4, #ffb6c1);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    flex-direction: column;
+    padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+}
+
+#valentine-screen.active,
+#valentine-prize.active {
+    display: flex;
+}
+
+.valentine-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+    max-width: 400px;
+    width: 100%;
+    animation: valentineFadeIn 0.5s ease-out;
+}
+
+@keyframes valentineFadeIn {
+    0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.valentine-hearts {
+    font-size: 60px;
+    animation: heartBeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.1); }
+    50% { transform: scale(1); }
+    75% { transform: scale(1.05); }
+}
+
+#valentine-screen h2,
+#valentine-prize h2 {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(24px, 7vw, 36px);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    line-height: 1.3;
+}
+
+.valentine-prize-text {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(16px, 4vw, 20px);
+    color: #fff;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+}
+
+.valentine-buttons {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+
+.valentine-btn {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(18px, 5vw, 24px);
+    font-weight: 700;
+    padding: 16px 40px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.valentine-btn:active {
+    transform: scale(0.95);
+}
+
+.valentine-yes {
+    background: linear-gradient(145deg, #ff4081, #e91e63);
+    color: white;
+    box-shadow: 0 6px 25px rgba(233, 30, 99, 0.5), 0 4px 0 #ad1457;
+}
+
+.valentine-yes:active {
+    box-shadow: 0 3px 15px rgba(233, 30, 99, 0.5), 0 2px 0 #ad1457;
+    transform: translateY(2px) scale(0.98);
+}
+
+.valentine-no {
+    background: linear-gradient(145deg, #b0bec5, #90a4ae);
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 4px 0 #607d8b;
+}
+
+.valentine-no:active {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2), 0 2px 0 #607d8b;
+    transform: translateY(2px) scale(0.98);
+}
+
+.valentine-prize-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.valentine-card-label {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(16px, 4vw, 20px);
+    font-weight: 600;
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.valentine-card-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(18px, 5vw, 22px);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.valentine-prize-image {
+    width: min(240px, 65vw);
+    height: min(320px, 87vw);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 4px solid #ff69b4;
+    box-shadow: 0 0 50px rgba(255, 105, 180, 0.5), 0 15px 40px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+    position: relative;
+    animation: valentineCardGlow 2s ease-in-out infinite;
+}
+
+.valentine-prize-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.valentine-img-placeholder {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    text-align: center;
+    gap: 10px;
+}
+
+.valentine-img-placeholder span {
+    font-size: 48px;
+}
+
+.valentine-img-placeholder p {
+    font-size: 14px;
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+.valentine-img-placeholder small {
+    font-size: 11px;
+    opacity: 0.6;
 }
 
 #canvas-container {
@@ -510,6 +716,17 @@ canvas {
     100% { background-position: 200% center; }
 }
 
+.card-rarity.rarity-valentine {
+    color: #ff69b4;
+    text-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+    animation: valentineTextGlow 2s ease-in-out infinite;
+}
+
+@keyframes valentineTextGlow {
+    0%, 100% { text-shadow: 0 0 20px rgba(255, 105, 180, 0.6); }
+    50% { text-shadow: 0 0 30px rgba(255, 105, 180, 0.9); }
+}
+
 .card-label.duplicate {
     color: #a0a0a0;
     text-shadow: 0 0 15px rgba(160, 160, 160, 0.3);
@@ -578,6 +795,28 @@ canvas {
 @keyframes legendaryCardGlow {
     0%, 100% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.6), 0 15px 40px rgba(0, 0, 0, 0.5); }
     50% { box-shadow: 0 0 70px rgba(255, 215, 0, 0.8), 0 15px 50px rgba(0, 0, 0, 0.5); }
+}
+
+.flip-card.rarity-valentine .flip-card-front,
+.flip-card.rarity-valentine .flip-card-back {
+    border-color: #ff69b4;
+    box-shadow: 0 0 50px rgba(255, 105, 180, 0.5), 0 15px 40px rgba(0, 0, 0, 0.5);
+    animation: valentineCardGlow 2s ease-in-out infinite;
+}
+
+.flip-card.rarity-valentine .flip-card-back {
+    background: linear-gradient(145deg, #ff85c8, #ff5ca8);
+}
+
+.flip-card.rarity-valentine .flip-card-back .card-title,
+.flip-card.rarity-valentine .flip-card-back .card-text {
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes valentineCardGlow {
+    0%, 100% { box-shadow: 0 0 50px rgba(255, 105, 180, 0.5), 0 15px 40px rgba(0, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 70px rgba(255, 105, 180, 0.7), 0 15px 50px rgba(0, 0, 0, 0.5); }
 }
 
 .flip-card-front {
@@ -991,6 +1230,16 @@ canvas {
 @keyframes legendaryBorder {
     0%, 100% { border-color: #ffd700; }
     50% { border-color: #ffec8b; }
+}
+
+.gallery-card.rarity-valentine {
+    border-color: #ff69b4;
+    animation: valentineBorder 2s ease-in-out infinite;
+}
+
+@keyframes valentineBorder {
+    0%, 100% { border-color: #ff69b4; }
+    50% { border-color: #ffb6c1; }
 }
 
 /* Voucher cards - Rainbow holographic effect */

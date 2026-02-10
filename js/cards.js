@@ -67,6 +67,12 @@ const RARITY_CONFIG = {
         probability: 0.015,
         order: 99,
         isVoucher: true
+    },
+    valentine: {
+        name: 'Valentinstag',
+        color: '#ff69b4',
+        probability: 0,
+        order: 4
     }
 };
 
@@ -308,16 +314,17 @@ const allCards = [
         text: 'Ein Wunsch frei! (Im Rahmen des Möglichen natürlich...)',
         rarity: 'voucher',
         voucherType: 'wish'
-    }
+    },
 
     // =============================================
-    // FUEGE HIER DEINE EIGENEN KARTEN HINZU:
+    // VALENTINE'S DAY SPECIAL KARTE
     // =============================================
-    // {
-    //     id: 8,
-    //     image: 'images/dein-bild.jpg',
-    //     title: 'Dein Titel',
-    //     text: 'Dein persoenlicher Text hier...',
-    //     rarity: 'rare'
-    // },
+    {
+        id: 999,
+        image: 'images/Valentin_Luca.JPG',
+        title: 'Valentinstags-Schatz',
+        text: 'Du hast JA gesagt! Besser isses!',
+        rarity: 'valentine',
+        isValentine: true
+    }
 ];

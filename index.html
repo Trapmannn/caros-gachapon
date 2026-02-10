@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" style="background:#1a1a2e;">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -15,7 +15,7 @@
     <title>Caro's Gachapon</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
-<body style="background:#1a1a2e;">
+<body>
     <!-- Landscape Orientation Blocker -->
     <div class="landscape-blocker">
         <div class="rotate-icon">📱</div>
@@ -30,6 +30,36 @@
         <input type="password" id="pw-input" placeholder="Passwort eingeben" autocomplete="off">
         <button id="pw-submit">Öffnen ✨</button>
         <p id="pw-error">Falsches Passwort!</p>
+    </div>
+
+    <!-- Valentine's Day Screen -->
+    <div id="valentine-screen">
+        <div class="valentine-content">
+            <div class="valentine-hearts">💕</div>
+            <h2 id="valentine-question">Willst du mein Valentinstags-Schatz sein?</h2>
+            <div class="valentine-buttons" id="valentine-buttons">
+                <button class="valentine-btn valentine-yes" id="valentine-yes">JA</button>
+                <button class="valentine-btn valentine-no" id="valentine-no">NEIN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Valentine's Prize Screen -->
+    <div id="valentine-prize">
+        <div class="valentine-content">
+            <div class="valentine-hearts">🎉💖🎉</div>
+            <h2>Herzlichen Glückwunsch!</h2>
+            <p class="valentine-prize-text">Hier ist dein Preis:</p>
+            <div class="valentine-prize-card">
+                <div class="valentine-card-label">Neue Karte!</div>
+                <div class="valentine-prize-image">
+                    <!-- PLATZHALTER: Ersetze das Bild unter images/valentine-prize.png -->
+                    <img id="valentine-prize-img" src="images/Valentin_Luca.JPG" alt="Dein Preis" onerror="this.style.display='none'; this.parentElement.querySelector('.valentine-img-placeholder').style.display='flex';">
+                </div>
+                <div class="valentine-card-title">Valentinstags-Schatz</div>
+            </div>
+            <button class="valentine-btn valentine-yes" id="valentine-continue">Weiter zum Spiel 🎮</button>
+        </div>
     </div>
 
     <div id="canvas-container"></div>
